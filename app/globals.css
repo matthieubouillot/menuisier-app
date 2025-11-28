@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Palette beige/crème et orange-brun doux */
+  --color-background: #ffffff;
+  --color-foreground: #2c2416;
+  --color-card: #ffffff;
+  --color-card-foreground: #2c2416;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #2c2416;
+  --color-primary: #c89f6d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f5f5;
+  --color-secondary-foreground: #2c2416;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #6b5d4f;
+  --color-accent: #d4a574;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #dc6b5a;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e5e5e5;
+  --color-input: #ffffff;
+  --color-ring: #c89f6d;
+  --radius: 1rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 255 255 255;
+    --foreground: 44 36 22;
+    --card: 255 255 255;
+    --card-foreground: 44 36 22;
+    --popover: 255 255 255;
+    --popover-foreground: 44 36 22;
+    --primary: 200 159 109;
+    --primary-foreground: 255 255 255;
+    --secondary-foreground: 44 36 22;
+    --muted-foreground: 107 93 79;
+    --accent: 212 165 116;
+    --accent-foreground: 255 255 255;
+    --destructive: 220 107 90;
+    --destructive-foreground: 255 255 255;
+    --input: 255 255 255;
+    --ring: 200 159 109;
+    --radius: 1rem;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+      "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  }
+
+  /* Masquer les barres de scroll jaunes/fluo */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+
+  /* Masquer complètement les barres de scroll si vous préférez */
+  /* 
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  */
 }

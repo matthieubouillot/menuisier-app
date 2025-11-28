@@ -1,0 +1,663 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Calculator, Package, Pencil, Plus, Trash2 } from "lucide-react";
+
+import { Navbar } from "@/components/layout/navbar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { formatCurrency } from "@/lib/utils";
+
+type CatalogMaterial = {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  unitPrice: number;
+};
+
+type CustomLine = {
+  id: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantity: number;
+  total: number;
+};
+
+type ClientOption = {
+  id: string;
+  label: string;
+};
+
+const generateId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+export default function ChiffragePage() {
+  const [catalog, setCatalog] = useState<CatalogMaterial[]>([]);
+  const [savedCalculations, setSavedCalculations] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+
+  const [lines, setLines] = useState<CustomLine[]>([]);
+  const [calcName, setCalcName] = useState("Projet sur mesure");
+  const [marginPercent, setMarginPercent] = useState("15");
+  const [laborCost, setLaborCost] = useState("0");
+  const [selectionId, setSelectionId] = useState("");
+  const [selectionQuantity, setSelectionQuantity] = useState("1");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [editingCalcId, setEditingCalcId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCatalog();
+    fetchCalculations();
+    fetchClients();
+  }, []);
+
+  const fetchCatalog = async () => {
+    try {
+      const res = await fetch("/api/materials");
+      if (!res.ok) throw new Error("Impossible de charger votre catalogue.");
+      const data = await res.json();
+      setCatalog(data);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+    }
+  };
+
+  const fetchCalculations = async () => {
+    try {
+      const res = await fetch("/api/materials/calculations");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.error ||
+            errorData.details ||
+            "Impossible de charger l'historique."
+        );
+      }
+      const data = await res.json();
+      setSavedCalculations(data);
+    } catch (err) {
+      console.error("Erreur lors du chargement de l'historique:", err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const res = await fetch("/api/clients");
+      if (!res.ok) throw new Error("Impossible de charger vos clients.");
+      const data = await res.json();
+      setClients(
+        data.map((client: any) => ({
+          id: client.id,
+          label: client.companyName || `${client.firstName} ${client.lastName}`,
+        }))
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateLine = (id: string, field: keyof CustomLine, value: string) => {
+    setLines((current) =>
+      current.map((line) => {
+        if (line.id !== id) return line;
+        const next: CustomLine = { ...line };
+        if (field === "unitPrice" || field === "quantity") {
+          const numeric = parseFloat(value);
+          next[field] = Number.isNaN(numeric) ? 0 : numeric;
+        } else {
+          // @ts-expect-error dynamic assign
+          next[field] = value;
+        }
+        next.total = Math.round(next.unitPrice * next.quantity * 100) / 100;
+        return next;
+      })
+    );
+  };
+
+  const addManualLine = () => {
+    setLines((current) => [
+      ...current,
+      {
+        id: generateId(),
+        name: "",
+        unit: "",
+        unitPrice: 0,
+        quantity: 0,
+        total: 0,
+      },
+    ]);
+    setMessage("Nouvelle ligne ajoutée.");
+    setError(null);
+  };
+
+  const addCatalogLine = () => {
+    if (!selectionId) {
+      setError("Choisis un matériau dans ton catalogue.");
+      return;
+    }
+    const quantity = parseFloat(selectionQuantity);
+    if (Number.isNaN(quantity) || quantity <= 0) {
+      setError("Indique une quantité valide.");
+      return;
+    }
+    const material = catalog.find((item) => item.id === selectionId);
+    if (!material) {
+      setError("Matériau introuvable.");
+      return;
+    }
+
+    const total = Math.round(material.unitPrice * quantity * 100) / 100;
+    setLines((current) => [
+      ...current,
+      {
+        id: generateId(),
+        name: material.name,
+        unit: material.unit,
+        unitPrice: material.unitPrice,
+        quantity,
+        total,
+      },
+    ]);
+    setSelectionId("");
+    setSelectionQuantity("1");
+    setError(null);
+    setMessage("Ligne ajoutée depuis le catalogue.");
+  };
+
+  const removeLine = (id: string) => {
+    setLines((current) => current.filter((line) => line.id !== id));
+  };
+
+  const resetLines = () => {
+    setLines([]);
+    setMessage(null);
+    setError(null);
+    setEditingCalcId(null);
+    setCalcName("Projet sur mesure");
+    setMarginPercent("15");
+    setLaborCost("0");
+    setSelectedClientId("");
+  };
+
+  const materialsTotal = useMemo(
+    () =>
+      Math.round(lines.reduce((sum, line) => sum + line.total, 0) * 100) / 100,
+    [lines]
+  );
+  const laborValue = useMemo(() => parseFloat(laborCost) || 0, [laborCost]);
+  const marginValue = useMemo(
+    () => parseFloat(marginPercent) || 0,
+    [marginPercent]
+  );
+  const baseTotal = useMemo(
+    () => materialsTotal + laborValue,
+    [materialsTotal, laborValue]
+  );
+  const finalTotal = useMemo(
+    () => Math.round(baseTotal * (1 + marginValue / 100) * 100) / 100,
+    [baseTotal, marginValue]
+  );
+
+  const saveCalculation = async () => {
+    if (lines.length === 0) {
+      setError("Ajoute au moins une ligne avant de sauvegarder.");
+      return;
+    }
+    setError(null);
+    setMessage(null);
+    try {
+      const payload = {
+        projectType: calcName || "Projet sur mesure",
+        dimensions: {
+          mode: "custom",
+          marginPercent: marginValue,
+          laborCost: laborValue,
+          name: calcName,
+        },
+        materials: lines.map((line) => ({
+          name: line.name,
+          unit: line.unit,
+          unitPrice: line.unitPrice,
+          quantity: line.quantity,
+          total: line.total,
+        })),
+        totalCost: finalTotal,
+        clientId: selectedClientId || null,
+      };
+
+      const url = editingCalcId
+        ? `/api/materials/calculations/${editingCalcId}`
+        : "/api/materials/calculations";
+      const method = editingCalcId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || "Impossible de sauvegarder ce calcul.");
+      }
+
+      setMessage(editingCalcId ? "Calcul mis à jour." : "Calcul sauvegardé.");
+      setEditingCalcId(null);
+      fetchCalculations();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+    }
+  };
+
+  const loadCalculation = (calc: any) => {
+    try {
+      const parsedMaterials = JSON.parse(calc.materials || "[]");
+      const parsedDimensions = JSON.parse(calc.dimensions || "{}");
+      setLines(
+        parsedMaterials.map((item: any) => ({
+          id: generateId(),
+          name: item.name,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          total: item.total,
+        }))
+      );
+      setCalcName(calc.projectType || "Projet sur mesure");
+      setMarginPercent(
+        parsedDimensions?.marginPercent !== undefined
+          ? String(parsedDimensions.marginPercent)
+          : marginPercent
+      );
+      setLaborCost(
+        parsedDimensions?.laborCost !== undefined
+          ? String(parsedDimensions.laborCost)
+          : laborCost
+      );
+      setSelectedClientId(calc.client?.id || "");
+      setEditingCalcId(calc.id);
+      setMessage("Calcul chargé dans le formulaire.");
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de charger ce calcul.");
+    }
+  };
+
+  const deleteCalculation = async (id: string) => {
+    const confirmed = window.confirm("Supprimer ce chiffrage ?");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/materials/calculations/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Impossible de supprimer ce chiffrage.");
+      if (editingCalcId === id) {
+        resetLines();
+      }
+      setMessage("Chiffrage supprimé.");
+      fetchCalculations();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
+        <div>
+          <p className="text-sm uppercase tracking-widest text-muted-foreground mb-2">
+            Chiffrage personnalisé
+          </p>
+          <h1 className="text-4xl font-bold text-foreground mb-3">
+            Compose tes devis sur mesure
+          </h1>
+          <p className="text-base text-muted-foreground max-w-3xl">
+            Sélectionne les matériaux de ton catalogue, ajoute des lignes
+            libres, applique ta marge et ta main-d'œuvre puis sauvegarde le
+            chiffrage pour l'injecter dans un devis ou une facture.
+          </p>
+        </div>
+
+        <Card className="hover:shadow-xl transition-shadow duration-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              Chiffrage
+            </CardTitle>
+            <CardDescription>
+              Utilise ton catalogue ou crée des lignes sur mesure.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Projet sur mesure</Label>
+                <Input
+                  value={calcName}
+                  onChange={(e) => setCalcName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Marge (%)</Label>
+                <Input
+                  type="number"
+                  value={marginPercent}
+                  onChange={(e) => setMarginPercent(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Main-d'œuvre (€)</Label>
+                <Input
+                  type="number"
+                  value={laborCost}
+                  onChange={(e) => setLaborCost(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Associer à un client</Label>
+                <Select
+                  value={selectedClientId}
+                  onChange={(e) => setSelectedClientId(e.target.value)}
+                >
+                  <option value="">Aucun</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-4 bg-muted/30 rounded-2xl border-2 border-dashed">
+              <div className="flex items-center gap-2 mb-3">
+                <Package className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">
+                  Depuis ton catalogue
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Sélectionne un matériau déjà enregistré dans ton catalogue. Le
+                nom, le prix et l'unité sont automatiquement pré-remplis avec
+                tes tarifs personnels.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="md:col-span-3 space-y-2">
+                  <Label>Matériau du catalogue</Label>
+                  <Select
+                    value={selectionId}
+                    onChange={(e) => setSelectionId(e.target.value)}
+                  >
+                    <option value="">Choisir un matériau</option>
+                    {catalog.map((material) => (
+                      <option key={material.id} value={material.id}>
+                        {material.name} • {formatCurrency(material.unitPrice)} /{" "}
+                        {material.unit}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantité</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={selectionQuantity}
+                    onChange={(e) => setSelectionQuantity(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={addCatalogLine}
+                  >
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-4 bg-muted/30 rounded-2xl border-2 border-dashed">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Ligne libre</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Crée une ligne manuelle pour un matériau ponctuel non présent
+                dans ton catalogue. Tu saisis toi-même le nom, le prix, l'unité
+                et la quantité.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="outline" onClick={addManualLine}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une ligne libre
+                </Button>
+                {lines.length > 0 && (
+                  <Button type="button" variant="ghost" onClick={resetLines}>
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {message && !error && (
+              <p className="text-sm text-primary">{message}</p>
+            )}
+
+            {lines.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Ajoute des matériaux pour démarrer ton chiffrage.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {lines.map((line) => (
+                  <div
+                    key={line.id}
+                    className="rounded-2xl border p-4 space-y-3 bg-secondary/40"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Nom de l'article</Label>
+                        <Input
+                          value={line.name}
+                          onChange={(e) =>
+                            updateLine(line.id, "name", e.target.value)
+                          }
+                          placeholder="Ex: Plan de travail"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Unité</Label>
+                        <Input
+                          value={line.unit}
+                          onChange={(e) =>
+                            updateLine(line.id, "unit", e.target.value)
+                          }
+                          placeholder="Ex: m², m, unité"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Quantité</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={
+                            line.quantity === 0 ? "" : line.quantity.toString()
+                          }
+                          onChange={(e) =>
+                            updateLine(line.id, "quantity", e.target.value)
+                          }
+                          placeholder="Ex: 5"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Prix unitaire (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={
+                            line.unitPrice === 0
+                              ? ""
+                              : line.unitPrice.toString()
+                          }
+                          onChange={(e) =>
+                            updateLine(line.id, "unitPrice", e.target.value)
+                          }
+                          placeholder="Ex: 80.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        Total ligne :{" "}
+                        <span className="font-semibold">
+                          {formatCurrency(line.total)}
+                        </span>
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLine(line.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Supprimer
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-muted/40 p-4 rounded-2xl">
+              <div>
+                <p className="text-xs uppercase text-muted-foreground">
+                  Matériaux
+                </p>
+                <p className="font-semibold">
+                  {formatCurrency(materialsTotal)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-muted-foreground">
+                  Main-d'œuvre
+                </p>
+                <p className="font-semibold">{formatCurrency(laborValue)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-muted-foreground">
+                  Marge ({marginValue} %)
+                </p>
+                <p className="font-semibold">
+                  {formatCurrency(Math.max(finalTotal - baseTotal, 0))}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-muted-foreground">
+                  Total TTC estimé
+                </p>
+                <p className="font-bold text-primary">
+                  {formatCurrency(finalTotal)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              {editingCalcId && (
+                <Button type="button" variant="ghost" onClick={resetLines}>
+                  Annuler la modification
+                </Button>
+              )}
+              <Button type="button" size="lg" onClick={saveCalculation}>
+                {editingCalcId ? "Mettre à jour" : "Sauvegarder ce calcul"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-xl transition-shadow duration-200">
+          <CardHeader>
+            <CardTitle>Historique des chiffrages</CardTitle>
+            <CardDescription>
+              Les derniers calculs sauvegardés (max 10). Réutilise-les dans tes
+              devis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {savedCalculations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Aucun calcul sauvegardé pour le moment.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {savedCalculations.map((calc) => (
+                  <div
+                    key={calc.id}
+                    className="p-4 rounded-2xl bg-secondary/50 border border-border/60 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold">{calc.projectType}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Total : {formatCurrency(calc.totalCost)}
+                      </p>
+                      {calc.client && (
+                        <p className="text-xs text-muted-foreground">
+                          Client :{" "}
+                          {calc.client.companyName ||
+                            `${calc.client.firstName} ${calc.client.lastName}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(calc.createdAt).toLocaleDateString("fr-FR")}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => loadCalculation(calc)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Modifier
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => deleteCalculation(calc.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Supprimer
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

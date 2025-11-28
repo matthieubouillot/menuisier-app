@@ -1,0 +1,276 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  companyName   String?
+  // Informations légales obligatoires (France)
+  address       String?   // Adresse complète
+  city          String?
+  postalCode    String?
+  phone         String?
+  siret         String?   // SIRET obligatoire pour factures
+  rcs           String?   // Numéro RCS (si applicable)
+  vatNumber     String?   // Numéro TVA intracommunautaire (si applicable)
+  legalMentions String?   // Mentions légales (pénalités de retard, taux d'intérêt, etc.)
+  paymentTerms  String?   // Conditions de paiement par défaut
+  paymentMethod String?   // Moyens de paiement acceptés par défaut
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  clients       Client[]
+  projects      Project[]
+  devis         Devis[]
+  factures      Facture[]
+  templates     Template[]
+  materials     Material[]
+  calculations  MaterialCalculation[]
+}
+
+model Client {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  companyName   String?
+  siret         String?
+  type          String    @default("particulier") // particulier ou professionnel
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?
+  notes         String?
+  userId        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects      Project[]
+  devis         Devis[]
+  factures      Facture[]
+  materialCalculations MaterialCalculation[]
+  
+  @@index([userId])
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  type          String    // cuisine, escalier, fenetre, etc.
+  status        String    @default("planning") // planning, en_cours, termine, annule
+  startDate     DateTime?
+  endDate       DateTime?
+  budget        Float?
+  userId        String
+  clientId      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  devis         Devis[]
+  factures      Facture[]
+  events        CalendarEvent[]
+  
+  @@index([userId])
+  @@index([clientId])
+}
+
+model Template {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  type          String    // cuisine, escalier, fenetre, etc.
+  content       String    // JSON content
+  userId        String
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+model Devis {
+  id            String    @id @default(cuid())
+  number        String    @unique
+  title         String
+  description   String?
+  status        String    @default("brouillon") // brouillon, envoye, signe, refuse, expire
+  totalHT       Float     @default(0)
+  totalTTC      Float     @default(0)
+  tvaRate       Float     @default(20)
+  validUntil    DateTime?
+  // Token sécurisé pour accès client
+  clientToken   String?   @unique
+  // Informations de signature/acceptation (pour traçabilité légale)
+  signedAt      DateTime? // Date et heure de l'acceptation
+  signedByName  String?   // Nom et prénom de la personne qui a accepté
+  signedByEmail String?   // Email de la personne qui a accepté
+  signedByIp    String?   // Adresse IP pour traçabilité
+  // Conditions générales (référence ou lien)
+  cgvReference  String?
+  // Mentions légales obligatoires
+  advancePayment Float?   // Acompte éventuel (en euros)
+  paymentTerms   String?  // Délai de paiement (ex: "30 jours", "À réception")
+  isVatApplicable Boolean  @default(true) // TVA redevable ou non
+  userId        String
+  clientId      String?
+  projectId     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items         DevisItem[]
+  facture       Facture?
+  
+  @@index([userId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([clientToken])
+}
+
+model DevisItem {
+  id            String    @id @default(cuid())
+  description   String
+  quantity      Float
+  unit          String    @default("unité")
+  unitPrice     Float
+  total         Float
+  devisId       String
+  createdAt     DateTime  @default(now())
+  
+  devis         Devis     @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  
+  @@index([devisId])
+}
+
+model Facture {
+  id            String    @id @default(cuid())
+  number        String    @unique
+  title         String
+  description   String?
+  status        String    @default("brouillon") // brouillon, envoye, paye, impaye
+  totalHT       Float     @default(0)
+  totalTTC      Float     @default(0)
+  tvaRate       Float     @default(20)
+  paidAmount    Float     @default(0)
+  paidAt        DateTime?
+  dueDate       DateTime?
+  // Token sécurisé pour accès client
+  clientToken   String?   @unique
+  // Conditions de paiement spécifiques à cette facture
+  paymentTerms  String?
+  paymentMethod String?
+  // Mentions légales spécifiques (pénalités de retard, taux d'intérêt)
+  legalMentions String?
+  isVatApplicable Boolean  @default(true)
+  userId        String
+  clientId      String?
+  projectId     String?
+  devisId       String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  devis         Devis?    @relation(fields: [devisId], references: [id], onDelete: SetNull)
+  items         FactureItem[]
+  
+  @@index([userId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([devisId])
+  @@index([clientToken])
+}
+
+model FactureItem {
+  id            String    @id @default(cuid())
+  description   String
+  quantity      Float
+  unit          String    @default("unité")
+  unitPrice     Float
+  total         Float
+  factureId     String
+  createdAt     DateTime  @default(now())
+  
+  facture       Facture   @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  
+  @@index([factureId])
+}
+
+model Material {
+  id            String    @id @default(cuid())
+  name          String
+  category      String    // bois, quincaillerie, colle, etc.
+  unit          String    // m2, m, kg, unite, etc.
+  unitPrice     Float
+  supplier      String?
+  supplierRef   String?
+  stockQuantity Float     @default(0)
+  minStock      Float     @default(0)
+  userId        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calculations  MaterialCalculation[]
+  
+  @@index([userId])
+  @@index([category])
+}
+
+model MaterialCalculation {
+  id            String    @id @default(cuid())
+  projectType   String    // cuisine, escalier, etc.
+  dimensions    String    // JSON: {length, width, height, etc.}
+  materials     String    // JSON: calculated materials
+  totalCost     Float
+  userId        String
+  materialId    String?
+  clientId      String?
+  createdAt     DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material      Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([clientId])
+}
+
+model CalendarEvent {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime?
+  type          String    @default("chantier") // chantier, rendez_vous, maintenance
+  location      String?
+  projectId     String?
+  userId        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([startDate])
+}
