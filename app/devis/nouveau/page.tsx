@@ -370,8 +370,8 @@ export default function NouveauDevisPage() {
       errors.push("La date de validité est obligatoire");
     }
 
-    if (!formData.paymentTerms.trim()) {
-      errors.push("Le délai de paiement est obligatoire");
+    if (!userPaymentTerms || userPaymentTerms.trim() === "") {
+      errors.push("Le délai de paiement est obligatoire. Veuillez le configurer dans vos paramètres entreprise.");
     }
 
     if (!formData.workStartDate) {
