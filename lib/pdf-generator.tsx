@@ -308,7 +308,7 @@ const DevisPDFDocument = ({ devis }: { devis: DevisData }) => (
 export async function generateDevisPDF(devis: DevisData): Promise<Buffer> {
   try {
     const stream = await renderToStream(
-      React.createElement(DevisPDFDocument, { devis })
+      <DevisPDFDocument devis={devis} />
     )
     
     const chunks: Buffer[] = []
@@ -532,7 +532,7 @@ export async function generateFacturePDF(
 ): Promise<Buffer> {
   try {
     const stream = await renderToStream(
-      React.createElement(FacturePDFDocument, { facture })
+      <FacturePDFDocument facture={facture} />
     )
     
     const chunks: Buffer[] = []
