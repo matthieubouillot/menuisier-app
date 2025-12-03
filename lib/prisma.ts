@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -7,8 +6,12 @@ declare global {
 }
 
 function createPrismaClient() {
-  // Récupérer DATABASE_URL depuis l'environnement avec une valeur par défaut
-  const dbUrl = process.env.DATABASE_URL || 'file:./dev.db'
+  // Récupérer DATABASE_URL depuis l'environnement
+  const dbUrl = process.env.DATABASE_URL
+  
+  if (!dbUrl) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
   
   // Détecter si on utilise PostgreSQL (production) ou SQLite (développement)
   const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://')
@@ -19,7 +22,10 @@ function createPrismaClient() {
       log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     })
   } else {
-    // SQLite : utiliser l'adaptateur better-sqlite3
+    // SQLite : utiliser l'adaptateur better-sqlite3 (uniquement en développement local)
+    // Import dynamique pour éviter les erreurs en production
+    const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3')
+    
     // Extraire le chemin du fichier (enlever le préfixe "file:")
     let databasePath = dbUrl.replace(/^file:/, '')
     
