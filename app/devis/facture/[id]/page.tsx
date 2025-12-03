@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button"
 import { formatClientName, formatCurrency, formatDate, formatFactureStatus, getFactureStatusClass } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft, Download } from "lucide-react"
-import { MarkAsPaidButton } from "@/components/facture/mark-as-paid"
-import { CopyClientLink } from "@/components/devis/copy-client-link"
 import { UpdateFactureStatus } from "@/components/facture/update-status"
-import { SendFactureEmail } from "@/components/facture/send-email"
 
 export default async function FactureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -69,18 +66,25 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
             <p className="text-5xl font-bold text-primary mb-2 tracking-widest">FACTURE</p>
             <h1 className="text-3xl font-bold text-foreground mb-2">{facture.title}</h1>
             <p className="text-muted-foreground text-lg font-semibold">N° {facture.number}</p>
+            <p className="text-muted-foreground text-sm mt-1">Date d'émission : {formatDate(facture.createdAt)}</p>
+            {facture.serviceDate && (
+              <p className="text-muted-foreground text-sm">Date de prestation : {formatDate(facture.serviceDate)}</p>
+            )}
+            {facture.devisNumber && (
+              <p className="text-muted-foreground text-sm">Devis d'origine : {facture.devisNumber}</p>
+            )}
+            {facture.dueDate && (
+              <p className="text-muted-foreground text-sm">Échéance : {formatDate(facture.dueDate)}</p>
+            )}
           </div>
           <div className="flex flex-wrap gap-4">
-            <CopyClientLink token={facture.clientToken} type="facture" />
+            <UpdateFactureStatus factureId={facture.id} currentStatus={facture.status} />
             <a href={`/api/facture/${facture.id}/pdf`} download={`Facture-${facture.number}.pdf`}>
               <Button size="lg" variant="outline" className="rounded-xl">
                 <Download className="mr-2 h-5 w-5" />
                 Télécharger PDF
               </Button>
             </a>
-            {facture.status !== "paye" && (
-              <MarkAsPaidButton factureId={facture.id} />
-            )}
           </div>
         </div>
 
@@ -189,38 +193,34 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
                     <p>{facture.project ? facture.project.name : "Aucun projet"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Statut</p>
-                    <UpdateFactureStatus factureId={facture.id} currentStatus={facture.status} />
+                    <p className="text-sm text-muted-foreground mb-1">Date d'émission</p>
+                    <p className="font-medium">{formatDate(facture.createdAt)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Émise le</p>
-                    <p>{formatDate(facture.createdAt)}</p>
-                  </div>
+                  {facture.serviceDate && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Date de prestation</p>
+                      <p className="font-medium">{formatDate(facture.serviceDate)}</p>
+                    </div>
+                  )}
+                  {facture.devisNumber && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Devis d'origine</p>
+                      <p className="font-medium">{facture.devisNumber}</p>
+                    </div>
+                  )}
                   {facture.dueDate && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Échéance</p>
-                      <p>{formatDate(facture.dueDate)}</p>
+                      <p className="font-medium">{formatDate(facture.dueDate)}</p>
                     </div>
                   )}
                   {facture.paidAt && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Payée le</p>
-                      <p>{formatDate(facture.paidAt)}</p>
+                      <p className="font-medium text-green-600">{formatDate(facture.paidAt)}</p>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-shadow duration-200">
-              <CardHeader>
-                <CardTitle className="text-xl">Envoyer par email</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SendFactureEmail 
-                  factureId={facture.id} 
-                  clientEmail={facture.client?.email || null}
-                />
               </CardContent>
             </Card>
 
@@ -321,23 +321,42 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
             <CardTitle className="text-xl">Mentions légales</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-              <li>
-                Pénalités de retard : 3 × taux d'intérêt légal, appliquées après mise en demeure.
-              </li>
-              <li>
-                Indemnité forfaitaire pour frais de recouvrement : 40 €.
-              </li>
-              {isVatApplicable ? (
-                facture.user?.vatNumber && (
-                  <li>Numéro TVA intracommunautaire : {facture.user.vatNumber}</li>
-                )
-              ) : (
-                <li>TVA non applicable, article 293 B du CGI.</li>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">TVA :</p>
+                <p className="text-sm text-muted-foreground">
+                  {isVatApplicable
+                    ? `TVA applicable au taux de ${facture.tvaRate}%`
+                    : "TVA non applicable (art. 293 B du CGI)"}
+                </p>
+                {isVatApplicable && facture.user?.vatNumber && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Numéro TVA intracommunautaire : {facture.user.vatNumber}
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">Pénalités de retard :</p>
+                <p className="text-sm text-muted-foreground">
+                  En cas de retard de paiement, des pénalités de retard au taux de 3 fois le taux d'intérêt légal en vigueur seront appliquées, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40€.
+                </p>
+              </div>
+              
+              {facture.user?.legalMentions && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Mentions particulières :</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{facture.user.legalMentions}</p>
+                </div>
               )}
-              {facture.user?.legalMentions && <li>{facture.user.legalMentions}</li>}
-              {facture.legalMentions && <li>{facture.legalMentions}</li>}
-            </ul>
+              
+              {facture.legalMentions && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Mentions complémentaires :</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{facture.legalMentions}</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -18,7 +18,7 @@ export async function POST(
 
     const devis = await prisma.devis.findUnique({
       where: { id },
-      include: { items: true },
+      include: { items: true, project: true },
     })
 
     if (!devis || devis.userId !== session.user.id) {
@@ -41,6 +41,9 @@ export async function POST(
     const clientToken = generateClientToken()
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + 30) // 30 jours pour payer
+    
+    // Date de la prestation : utiliser la date de début des travaux du devis, ou la date de création du devis
+    const serviceDate = devis.workStartDate || devis.createdAt
 
     // Récupérer les informations légales de l'utilisateur
     const user = await prisma.user.findUnique({
@@ -57,6 +60,7 @@ export async function POST(
         totalTTC: devis.totalTTC,
         tvaRate: devis.tvaRate,
         dueDate,
+        serviceDate,
         clientToken,
         paymentTerms: devis.paymentTerms || user?.paymentTerms || null,
         paymentMethod: user?.paymentMethod || null,

@@ -186,16 +186,26 @@ export default function CatalogueMateriauxPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>
-                      Unité de mesure *{" "}
-                      <span className="text-xs text-muted-foreground font-normal">
-                        (m², m, kg, unité, lot...)
-                      </span>
-                    </Label>
-                    <Input
+                    <Label>Unité de mesure *</Label>
+                    <Select
                       value={form.unit}
                       onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                    />
+                    >
+                      <option value="">Sélectionner une unité</option>
+                      <option value="m²">m² (mètre carré)</option>
+                      <option value="m">m (mètre linéaire)</option>
+                      <option value="m³">m³ (mètre cube)</option>
+                      <option value="kg">kg (kilogramme)</option>
+                      <option value="unité">unité</option>
+                      <option value="lot">lot</option>
+                      <option value="forfait">forfait</option>
+                      <option value="paire">paire</option>
+                      <option value="pièce">pièce</option>
+                      <option value="boîte">boîte</option>
+                      <option value="rouleau">rouleau</option>
+                      <option value="plaquette">plaquette</option>
+                      <option value="panneau">panneau</option>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>

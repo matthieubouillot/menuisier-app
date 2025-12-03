@@ -19,6 +19,11 @@ export async function GET(
       where: { id },
       include: {
         client: true,
+        devis: {
+          select: {
+            number: true,
+          },
+        },
         user: {
           select: {
             name: true,
@@ -50,6 +55,8 @@ export async function GET(
       description: facture.description,
       createdAt: facture.createdAt,
       dueDate: facture.dueDate,
+      serviceDate: facture.serviceDate,
+      devisNumber: facture.devis?.number || null,
       totalHT: facture.totalHT,
       totalTTC: facture.totalTTC,
       tvaRate: facture.tvaRate,

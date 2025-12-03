@@ -47,7 +47,13 @@ export async function POST(request: Request) {
       validUntil,
       advancePayment,
       paymentTerms,
-      isVatApplicable
+      isVatApplicable,
+      cgvReference,
+      workStartDate,
+      workDuration,
+      travelExpenses,
+      insuranceInfo,
+      afterSalesService
     } = body
 
     if (!title || !items || items.length === 0) {
@@ -60,6 +66,35 @@ export async function POST(request: Request) {
     if (!projectId) {
       return NextResponse.json(
         { error: "Un projet doit être sélectionné" },
+        { status: 400 }
+      )
+    }
+
+    // Validation des champs obligatoires légaux
+    if (!workStartDate) {
+      return NextResponse.json(
+        { error: "La date de début des travaux est obligatoire" },
+        { status: 400 }
+      )
+    }
+
+    if (!workDuration || workDuration.trim() === "") {
+      return NextResponse.json(
+        { error: "La durée estimée des travaux est obligatoire" },
+        { status: 400 }
+      )
+    }
+
+    if (!paymentTerms || paymentTerms.trim() === "") {
+      return NextResponse.json(
+        { error: "Le délai de paiement est obligatoire" },
+        { status: 400 }
+      )
+    }
+
+    if (!validUntil) {
+      return NextResponse.json(
+        { error: "La date de validité du devis est obligatoire" },
         { status: 400 }
       )
     }
@@ -99,6 +134,12 @@ export async function POST(request: Request) {
         advancePayment: advancePayment ? parseFloat(advancePayment) : null,
         paymentTerms: paymentTerms || null,
         isVatApplicable: isVatApplicable !== false,
+        cgvReference: cgvReference || null,
+        workStartDate: workStartDate ? new Date(workStartDate) : null,
+        workDuration: workDuration || null,
+        travelExpenses: travelExpenses ? parseFloat(travelExpenses) : null,
+        insuranceInfo: insuranceInfo || null,
+        afterSalesService: afterSalesService || null,
         clientToken,
         userId: session.user.id,
         clientId: finalClientId,
@@ -117,10 +158,10 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(devis, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating devis:", error)
     return NextResponse.json(
-      { error: "Erreur lors de la création du devis" },
+      { error: error?.message || "Erreur lors de la création du devis", details: error },
       { status: 500 }
     )
   }

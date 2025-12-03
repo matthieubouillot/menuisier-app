@@ -127,6 +127,12 @@ model Devis {
   advancePayment Float?   // Acompte éventuel (en euros)
   paymentTerms   String?  // Délai de paiement (ex: "30 jours", "À réception")
   isVatApplicable Boolean  @default(true) // TVA redevable ou non
+  // Informations obligatoires pour devis (France)
+  workStartDate  DateTime? // Date de début des travaux (obligatoire légalement)
+  workDuration   String?   // Durée estimée des travaux (obligatoire légalement)
+  travelExpenses Float?   // Frais de déplacement éventuels
+  insuranceInfo  String?   // Assurance professionnelle (obligatoire pour artisans)
+  afterSalesService String? // Conditions de service après-vente
   userId        String
   clientId      String?
   projectId     String?
@@ -172,6 +178,7 @@ model Facture {
   paidAmount    Float     @default(0)
   paidAt        DateTime?
   dueDate       DateTime?
+  serviceDate   DateTime? // Date de la vente ou de la prestation (obligatoire légalement)
   // Token sécurisé pour accès client
   clientToken   String?   @unique
   // Conditions de paiement spécifiques à cette facture

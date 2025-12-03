@@ -8,9 +8,7 @@ import { formatClientName, formatCurrency, formatDate, formatDevisStatus, getDev
 import Link from "next/link"
 import { ArrowLeft, FileText, Receipt, Download } from "lucide-react"
 import { ConvertToFactureButton } from "@/components/devis/convert-to-facture"
-import { CopyClientLink } from "@/components/devis/copy-client-link"
 import { UpdateDevisStatus } from "@/components/devis/update-status"
-import { SendDevisEmail } from "@/components/devis/send-email"
 
 export default async function DevisDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -65,16 +63,20 @@ export default async function DevisDetailPage({ params }: { params: Promise<{ id
             <h1 className="text-5xl font-bold text-primary mb-2">DEVIS</h1>
             <h2 className="text-3xl font-bold text-foreground mb-2">{devis.title}</h2>
             <p className="text-muted-foreground text-lg font-semibold">N° {devis.number}</p>
+            <p className="text-muted-foreground text-sm mt-1">Date d'émission : {formatDate(devis.createdAt)}</p>
+            {devis.validUntil && (
+              <p className="text-muted-foreground text-sm">Valide jusqu'au : {formatDate(devis.validUntil)}</p>
+            )}
           </div>
           <div className="flex flex-wrap gap-4">
-            <CopyClientLink token={devis.clientToken} type="devis" />
+            <UpdateDevisStatus devisId={devis.id} currentStatus={devis.status} />
             <a href={`/api/devis/${devis.id}/pdf`} download={`Devis-${devis.number}.pdf`}>
               <Button size="lg" variant="outline" className="rounded-xl">
                 <Download className="mr-2 h-5 w-5" />
                 Télécharger PDF
               </Button>
             </a>
-            {!devis.facture && (
+            {devis.status === "signe" && !devis.facture && (
               <ConvertToFactureButton devisId={devis.id} />
             )}
             {devis.facture && (
@@ -190,10 +192,6 @@ export default async function DevisDetailPage({ params }: { params: Promise<{ id
                     <p className="text-sm text-muted-foreground mb-1">Projet</p>
                     <p>{devis.project ? devis.project.name : "Aucun projet"}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Statut</p>
-                    <UpdateDevisStatus devisId={devis.id} currentStatus={devis.status} />
-                  </div>
                   {devis.validUntil && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Valide jusqu'au</p>
@@ -213,18 +211,6 @@ export default async function DevisDetailPage({ params }: { params: Promise<{ id
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-shadow duration-200">
-              <CardHeader>
-                <CardTitle className="text-xl">Envoyer par email</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SendDevisEmail 
-                  devisId={devis.id} 
-                  clientEmail={devis.client?.email || null}
-                />
               </CardContent>
             </Card>
 
@@ -290,27 +276,106 @@ export default async function DevisDetailPage({ params }: { params: Promise<{ id
                   </div>
                 )}
                 <div className="pt-4 border-t space-y-2 text-xs text-muted-foreground">
-                  {devis.paymentTerms && (
-                    <div>
-                      <p className="font-semibold text-foreground mb-1">Délai de paiement :</p>
-                      <p>{devis.paymentTerms}</p>
-                    </div>
-                  )}
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">Date d'émission :</p>
+                    <p>{formatDate(devis.createdAt)}</p>
+                  </div>
                   {devis.validUntil && (
                     <div>
                       <p className="font-semibold text-foreground mb-1">Valide jusqu'au :</p>
                       <p>{formatDate(devis.validUntil)}</p>
                     </div>
                   )}
-                  <div>
-                    <p className="font-semibold text-foreground mb-1">Créé le :</p>
-                    <p>{formatDate(devis.createdAt)}</p>
-                  </div>
+                  {devis.workStartDate && (
+                    <div>
+                      <p className="font-semibold text-foreground mb-1">Date de début des travaux :</p>
+                      <p>{formatDate(devis.workStartDate)}</p>
+                    </div>
+                  )}
+                  {devis.workDuration && (
+                    <div>
+                      <p className="font-semibold text-foreground mb-1">Durée estimée des travaux :</p>
+                      <p>{devis.workDuration}</p>
+                    </div>
+                  )}
+                  {devis.paymentTerms && (
+                    <div>
+                      <p className="font-semibold text-foreground mb-1">Délai de paiement :</p>
+                      <p>{devis.paymentTerms}</p>
+                    </div>
+                  )}
+                  {devis.travelExpenses && devis.travelExpenses > 0 && (
+                    <div>
+                      <p className="font-semibold text-foreground mb-1">Frais de déplacement :</p>
+                      <p>{formatCurrency(devis.travelExpenses)}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Mentions légales */}
+        <Card className="hover:shadow-xl transition-shadow duration-200 mt-6">
+          <CardHeader>
+            <CardTitle className="text-xl">Mentions légales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">TVA :</p>
+                <p className="text-sm text-muted-foreground">
+                  {devis.isVatApplicable !== false
+                    ? `TVA applicable au taux de ${devis.tvaRate}%`
+                    : "TVA non applicable"}
+                </p>
+              </div>
+              
+              {devis.insuranceInfo && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Assurance professionnelle :</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{devis.insuranceInfo}</p>
+                </div>
+              )}
+              
+              {devis.afterSalesService && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Service après-vente :</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{devis.afterSalesService}</p>
+                </div>
+              )}
+              
+              {devis.cgvReference && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Référence CGV :</p>
+                  <p className="text-sm text-muted-foreground">{devis.cgvReference}</p>
+                </div>
+              )}
+              
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">Pénalités de retard :</p>
+                <p className="text-sm text-muted-foreground">
+                  En cas de retard de paiement, des pénalités de retard au taux de 3 fois le taux d'intérêt légal en vigueur seront appliquées, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40€.
+                </p>
+              </div>
+              
+              {devis.user.rcs && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">RCS :</p>
+                  <p className="text-sm text-muted-foreground">{devis.user.rcs}</p>
+                </div>
+              )}
+              
+              {devis.user.vatNumber && devis.isVatApplicable !== false && (
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Numéro TVA intracommunautaire :</p>
+                  <p className="text-sm text-muted-foreground">{devis.user.vatNumber}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

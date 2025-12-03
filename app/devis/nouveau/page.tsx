@@ -41,6 +41,12 @@ export default function NouveauDevisPage() {
     validUntil: "",
     advancePayment: "",
     paymentTerms: "",
+    cgvReference: "",
+    workStartDate: "",
+    workDuration: "",
+    travelExpenses: "",
+    insuranceInfo: "",
+    afterSalesService: "",
   });
 
   const generateId = () => {
@@ -52,7 +58,7 @@ export default function NouveauDevisPage() {
       id: generateId(),
       description: "",
       quantity: 1,
-      unit: "unité",
+      unit: "m²", // Unité par défaut pour menuisier
       unitPrice: 0,
       total: 0,
     },
@@ -60,7 +66,43 @@ export default function NouveauDevisPage() {
 
   useEffect(() => {
     fetchProjects();
+    fetchUserSettings();
   }, []);
+
+  const fetchUserSettings = async () => {
+    try {
+      const res = await fetch("/api/user/settings");
+      if (res.ok) {
+        const user = await res.json();
+        // Pré-remplir les champs depuis les paramètres utilisateur
+        setFormData((prev) => ({
+          ...prev,
+          paymentTerms: user.paymentTerms || "30 jours",
+          // Ne pas pré-remplir insuranceInfo - c'est un champ spécifique à chaque devis
+          // Calculer la date de validité par défaut (30 jours)
+          validUntil: prev.validUntil || getDefaultValidUntil(),
+          // Calculer la date de début des travaux par défaut (7 jours)
+          workStartDate: prev.workStartDate || getDefaultWorkStartDate(),
+          // Durée par défaut pour menuisier
+          workDuration: prev.workDuration || "3 à 4 semaines",
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des paramètres", error);
+    }
+  };
+
+  const getDefaultValidUntil = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30); // 30 jours par défaut
+    return date.toISOString().split("T")[0];
+  };
+
+  const getDefaultWorkStartDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7); // 7 jours par défaut
+    return date.toISOString().split("T")[0];
+  };
 
   const fetchProjects = async () => {
     setProjectsLoading(true);
@@ -100,7 +142,7 @@ export default function NouveauDevisPage() {
               id: generateId(),
               description: "",
               quantity: 1,
-              unit: "unité",
+              unit: "m²",
               unitPrice: 0,
               total: 0,
             },
@@ -185,7 +227,7 @@ export default function NouveauDevisPage() {
             id: generateId(),
             description: "",
             quantity: 1,
-            unit: "unité",
+            unit: "m²",
             unitPrice: 0,
             total: 0,
           },
@@ -208,7 +250,7 @@ export default function NouveauDevisPage() {
           id: generateId(),
           description: "",
           quantity: 1,
-          unit: "unité",
+          unit: "m²",
           unitPrice: 0,
           total: 0,
         },
@@ -249,7 +291,7 @@ export default function NouveauDevisPage() {
           id: generateId(),
           description: "",
           quantity: 1,
-          unit: "unité",
+          unit: "m²",
           unitPrice: 0,
           total: 0,
         },
@@ -285,7 +327,7 @@ export default function NouveauDevisPage() {
         id: generateId(),
         description: "",
         quantity: 1,
-        unit: "unité",
+        unit: "m²",
         unitPrice: 0,
         total: 0,
       },
@@ -313,11 +355,59 @@ export default function NouveauDevisPage() {
     return { totalHT, tva, totalTTC };
   };
 
+  const validateForm = () => {
+    const errors: string[] = [];
+
+    if (!formData.projectId) {
+      errors.push("Veuillez sélectionner un projet");
+    }
+
+    if (!formData.title.trim()) {
+      errors.push("Le titre est obligatoire");
+    }
+
+    if (!formData.validUntil) {
+      errors.push("La date de validité est obligatoire");
+    }
+
+    if (!formData.paymentTerms.trim()) {
+      errors.push("Le délai de paiement est obligatoire");
+    }
+
+    if (!formData.workStartDate) {
+      errors.push("La date de début des travaux est obligatoire");
+    }
+
+    if (!formData.workDuration.trim()) {
+      errors.push("La durée estimée des travaux est obligatoire");
+    }
+
+
+    // Vérifier les lignes de devis
+    const emptyItems = items.filter(
+      (item) => !item.description.trim() || item.quantity <= 0 || item.unitPrice <= 0
+    );
+    if (emptyItems.length > 0) {
+      errors.push(
+        "Toutes les lignes doivent avoir une description, une quantité et un prix unitaire valides"
+      );
+    }
+
+    // Vérifier qu'il y a au moins une ligne avec un total > 0
+    const validItems = items.filter((item) => item.total > 0);
+    if (validItems.length === 0) {
+      errors.push("Au moins une ligne de devis doit avoir un montant supérieur à 0");
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.projectId) {
-      alert("Veuillez sélectionner un projet");
+    const errors = validateForm();
+    if (errors.length > 0) {
+      alert("Erreurs de validation :\n" + errors.join("\n"));
       return;
     }
 
@@ -344,17 +434,28 @@ export default function NouveauDevisPage() {
             : null,
           paymentTerms: formData.paymentTerms || null,
           isVatApplicable: formData.isVatApplicable !== false,
+          cgvReference: formData.cgvReference || null,
+          workStartDate: formData.workStartDate
+            ? new Date(formData.workStartDate).toISOString()
+            : null,
+          workDuration: formData.workDuration || null,
+          travelExpenses: formData.travelExpenses
+            ? parseFloat(formData.travelExpenses)
+            : null,
+          insuranceInfo: formData.insuranceInfo || null,
+          afterSalesService: formData.afterSalesService || null,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la création du devis");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erreur lors de la création du devis");
       }
 
       router.push("/devis");
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors de la création du devis");
+    } catch (error: any) {
+      console.error("Erreur détaillée:", error);
+      alert(error?.message || "Erreur lors de la création du devis");
     } finally {
       setLoading(false);
     }
@@ -534,7 +635,7 @@ export default function NouveauDevisPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="paymentTerms">Délai de paiement *</Label>
-                      <Input
+                      <Select
                         id="paymentTerms"
                         value={formData.paymentTerms}
                         onChange={(e) =>
@@ -544,11 +645,152 @@ export default function NouveauDevisPage() {
                           })
                         }
                         required
-                      />
+                      >
+                        <option value="">Sélectionner un délai</option>
+                        <option value="À la commande">À la commande</option>
+                        <option value="À réception">À réception</option>
+                        <option value="15 jours">15 jours</option>
+                        <option value="30 jours">30 jours</option>
+                        <option value="45 jours">45 jours</option>
+                        <option value="60 jours">60 jours</option>
+                        <option value="Acompte à la commande, solde à la livraison">
+                          Acompte à la commande, solde à la livraison
+                        </option>
+                      </Select>
                       <p className="text-xs text-muted-foreground">
-                        Obligatoire pour un devis légal
+                        Obligatoire pour un devis légal (pré-rempli depuis vos paramètres)
                       </p>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="workStartDate">Date de début des travaux *</Label>
+                      <Input
+                        id="workStartDate"
+                        type="date"
+                        value={formData.workStartDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            workStartDate: e.target.value,
+                          })
+                        }
+                        required
+                        min={new Date().toISOString().split("T")[0]} // Pas de date dans le passé
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Obligatoire légalement (7 jours par défaut)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="workDuration">Durée estimée des travaux *</Label>
+                      <Select
+                        id="workDuration"
+                        value={formData.workDuration}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            workDuration: e.target.value,
+                          })
+                        }
+                        required
+                      >
+                        <option value="">Sélectionner une durée</option>
+                        <option value="1 semaine">1 semaine</option>
+                        <option value="2 semaines">2 semaines</option>
+                        <option value="3 semaines">3 semaines</option>
+                        <option value="4 semaines">4 semaines</option>
+                        <option value="1 mois">1 mois</option>
+                        <option value="1,5 mois">1,5 mois</option>
+                        <option value="2 mois">2 mois</option>
+                        <option value="3 mois">3 mois</option>
+                        <option value="4 mois">4 mois</option>
+                        <option value="5 mois">5 mois</option>
+                        <option value="6 mois">6 mois</option>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Obligatoire légalement (3-4 semaines par défaut)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="travelExpenses">Frais de déplacement (€)</Label>
+                      <Input
+                        id="travelExpenses"
+                        type="number"
+                        value={formData.travelExpenses}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            travelExpenses: e.target.value,
+                          })
+                        }
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Si des frais de déplacement sont prévus
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cgvReference">Référence CGV</Label>
+                      <Input
+                        id="cgvReference"
+                        value={formData.cgvReference}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            cgvReference: e.target.value,
+                          })
+                        }
+                        placeholder="Ex: CGV-2024, Voir conditions générales"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Référence aux Conditions Générales de Vente
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="insuranceInfo">Assurance professionnelle</Label>
+                    <Textarea
+                      id="insuranceInfo"
+                      value={formData.insuranceInfo}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          insuranceInfo: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      placeholder="Ex: Assurance RC Pro souscrite auprès de [Assureur], couverture géographique: France métropolitaine"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Recommandé pour les artisans : nom de l'assureur, couverture géographique
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="afterSalesService">Conditions de service après-vente</Label>
+                    <Textarea
+                      id="afterSalesService"
+                      value={formData.afterSalesService}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          afterSalesService: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      placeholder="Ex: Garantie 2 ans pièces et main-d'œuvre, intervention sous 48h"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Si applicable, précisez les conditions du service après-vente
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -592,13 +834,26 @@ export default function NouveauDevisPage() {
                           </div>
                           <div className="space-y-2">
                             <Label className="text-xs">Unité</Label>
-                            <Input
+                            <Select
                               value={item.unit}
                               onChange={(e) =>
                                 updateItem(item.id, "unit", e.target.value)
                               }
-                              placeholder="Ex: m², m, unité"
-                            />
+                            >
+                              <option value="m²">m² (mètre carré)</option>
+                              <option value="m">m (mètre linéaire)</option>
+                              <option value="m³">m³ (mètre cube)</option>
+                              <option value="unité">unité</option>
+                              <option value="lot">lot</option>
+                              <option value="forfait">forfait</option>
+                              <option value="paire">paire</option>
+                              <option value="pièce">pièce</option>
+                              <option value="planche">planche</option>
+                              <option value="panneau">panneau</option>
+                              <option value="boîte">boîte</option>
+                              <option value="rouleau">rouleau</option>
+                              <option value="kg">kg (kilogramme)</option>
+                            </Select>
                           </div>
                           <div className="space-y-2">
                             <Label className="text-xs">Quantité</Label>

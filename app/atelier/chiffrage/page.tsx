@@ -59,6 +59,14 @@ export default function ChiffragePage() {
   const [editingCalcId, setEditingCalcId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    name: "",
+    category: "bois",
+    unit: "",
+    unitPrice: "",
+    quantity: "",
+  });
 
   useEffect(() => {
     fetchCatalog();
@@ -132,18 +140,49 @@ export default function ChiffragePage() {
   };
 
   const addManualLine = () => {
+    // Validation du formulaire
+    if (!manualForm.name.trim()) {
+      setError("Le nom est obligatoire.");
+      return;
+    }
+    if (!manualForm.unit.trim()) {
+      setError("L'unité est obligatoire.");
+      return;
+    }
+    const parsedPrice = parseFloat(manualForm.unitPrice);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      setError("Indique un prix unitaire valide.");
+      return;
+    }
+    const parsedQuantity = parseFloat(manualForm.quantity);
+    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setError("Indique une quantité valide.");
+      return;
+    }
+
+    const total = Math.round(parsedPrice * parsedQuantity * 100) / 100;
     setLines((current) => [
       ...current,
       {
         id: generateId(),
-        name: "",
-        unit: "",
-        unitPrice: 0,
-        quantity: 0,
-        total: 0,
+        name: manualForm.name.trim(),
+        unit: manualForm.unit.trim(),
+        unitPrice: parsedPrice,
+        quantity: parsedQuantity,
+        total,
       },
     ]);
-    setMessage("Nouvelle ligne ajoutée.");
+    
+    // Réinitialiser le formulaire
+    setManualForm({
+      name: "",
+      category: "bois",
+      unit: "",
+      unitPrice: "",
+      quantity: "",
+    });
+    setShowManualForm(false);
+    setMessage("Ligne libre ajoutée.");
     setError(null);
   };
 
@@ -445,20 +484,130 @@ export default function ChiffragePage() {
               </div>
               <p className="text-sm text-muted-foreground mb-4">
                 Crée une ligne manuelle pour un matériau ponctuel non présent
-                dans ton catalogue. Tu saisis toi-même le nom, le prix, l'unité
-                et la quantité.
+                dans ton catalogue. Saisis toutes les informations nécessaires.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="outline" onClick={addManualLine}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter une ligne libre
-                </Button>
-                {lines.length > 0 && (
-                  <Button type="button" variant="ghost" onClick={resetLines}>
-                    Réinitialiser
+              
+              {!showManualForm ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowManualForm(true);
+                      setError(null);
+                      setMessage(null);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une ligne libre
                   </Button>
-                )}
-              </div>
+                  {lines.length > 0 && (
+                    <Button type="button" variant="ghost" onClick={resetLines}>
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4 p-4 bg-background rounded-2xl border">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nom *</Label>
+                      <Input
+                        value={manualForm.name}
+                        onChange={(e) =>
+                          setManualForm({ ...manualForm, name: e.target.value })
+                        }
+                        placeholder="Ex: Plan de travail"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Catégorie</Label>
+                      <Select
+                        value={manualForm.category}
+                        onChange={(e) =>
+                          setManualForm({ ...manualForm, category: e.target.value })
+                        }
+                      >
+                        <option value="bois">Bois</option>
+                        <option value="quincaillerie">Quincaillerie</option>
+                        <option value="fourniture">Fourniture</option>
+                        <option value="finitions">Finitions</option>
+                        <option value="autre">Autre</option>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Unité de mesure *</Label>
+                      <Select
+                        value={manualForm.unit}
+                        onChange={(e) =>
+                          setManualForm({ ...manualForm, unit: e.target.value })
+                        }
+                      >
+                        <option value="">Sélectionner une unité</option>
+                        <option value="m²">m² (mètre carré)</option>
+                        <option value="m">m (mètre linéaire)</option>
+                        <option value="m³">m³ (mètre cube)</option>
+                        <option value="kg">kg (kilogramme)</option>
+                        <option value="unité">unité</option>
+                        <option value="lot">lot</option>
+                        <option value="forfait">forfait</option>
+                        <option value="paire">paire</option>
+                        <option value="pièce">pièce</option>
+                        <option value="boîte">boîte</option>
+                        <option value="rouleau">rouleau</option>
+                        <option value="plaquette">plaquette</option>
+                        <option value="panneau">panneau</option>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prix unitaire (€) *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={manualForm.unitPrice}
+                        onChange={(e) =>
+                          setManualForm({ ...manualForm, unitPrice: e.target.value })
+                        }
+                        placeholder="Ex: 80.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quantité *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={manualForm.quantity}
+                        onChange={(e) =>
+                          setManualForm({ ...manualForm, quantity: e.target.value })
+                        }
+                        placeholder="Ex: 5"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button type="button" onClick={addManualLine}>
+                      Ajouter la ligne
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowManualForm(false);
+                        setManualForm({
+                          name: "",
+                          category: "bois",
+                          unit: "",
+                          unitPrice: "",
+                          quantity: "",
+                        });
+                        setError(null);
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}

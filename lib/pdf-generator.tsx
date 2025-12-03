@@ -15,6 +15,12 @@ interface DevisData {
   advancePayment?: number | null
   paymentTerms?: string | null
   isVatApplicable: boolean
+  workStartDate?: Date | null
+  workDuration?: string | null
+  travelExpenses?: number | null
+  insuranceInfo?: string | null
+  afterSalesService?: string | null
+  cgvReference?: string | null
   items: Array<{
     description: string
     quantity: number
@@ -199,24 +205,51 @@ const DevisPDFDocument = ({ devis }: { devis: DevisData }) => (
 
       <View style={{ flexDirection: "row", marginTop: 15, gap: 35 }}>
         <View style={{ flex: 1 }}>
-          <View style={styles.legal}>
-            <Text style={styles.sectionTitle}>Mentions légales :</Text>
-            {devis.paymentTerms && (
-              <Text style={{ fontSize: 8, marginBottom: 5 }}>Délai de paiement : {devis.paymentTerms}</Text>
-            )}
-            <Text style={{ fontSize: 8, marginBottom: 5 }}>
-              Modalités de paiement : {devis.paymentTerms || "À convenir"}
-            </Text>
-            <Text style={{ fontSize: 8, marginBottom: 7 }}>
-              TVA :{" "}
-              {devis.isVatApplicable
-                ? `TVA applicable au taux de ${devis.tvaRate}%`
-                : "TVA non applicable"}
-            </Text>
-            <Text style={{ fontSize: 7, lineHeight: 1.3, marginBottom: 12 }}>
-              En cas de retard de paiement, des pénalités de retard au taux de 3 fois le taux d'intérêt légal en vigueur seront appliquées, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40€.
-            </Text>
-          </View>
+      <View style={styles.legal}>
+        <Text style={styles.sectionTitle}>Mentions légales :</Text>
+        {devis.workStartDate && (
+          <Text style={{ fontSize: 8, marginBottom: 4 }}>
+            Date de début des travaux : {formatDate(devis.workStartDate)}
+          </Text>
+        )}
+        {devis.workDuration && (
+          <Text style={{ fontSize: 8, marginBottom: 4 }}>
+            Durée estimée des travaux : {devis.workDuration}
+          </Text>
+        )}
+        {devis.paymentTerms && (
+          <Text style={{ fontSize: 8, marginBottom: 4 }}>Délai de paiement : {devis.paymentTerms}</Text>
+        )}
+        {devis.travelExpenses && devis.travelExpenses > 0 && (
+          <Text style={{ fontSize: 8, marginBottom: 4 }}>
+            Frais de déplacement : {formatCurrency(devis.travelExpenses)}
+          </Text>
+        )}
+        <Text style={{ fontSize: 8, marginBottom: 5 }}>
+          TVA :{" "}
+          {devis.isVatApplicable
+            ? `TVA applicable au taux de ${devis.tvaRate}%`
+            : "TVA non applicable"}
+        </Text>
+        {devis.insuranceInfo && (
+          <Text style={{ fontSize: 7, lineHeight: 1.2, marginBottom: 5 }}>
+            Assurance professionnelle : {devis.insuranceInfo}
+          </Text>
+        )}
+        {devis.afterSalesService && (
+          <Text style={{ fontSize: 7, lineHeight: 1.2, marginBottom: 5 }}>
+            Service après-vente : {devis.afterSalesService}
+          </Text>
+        )}
+        {devis.cgvReference && (
+          <Text style={{ fontSize: 7, marginBottom: 5 }}>
+            Référence CGV : {devis.cgvReference}
+          </Text>
+        )}
+        <Text style={{ fontSize: 7, lineHeight: 1.3, marginBottom: 12 }}>
+          En cas de retard de paiement, des pénalités de retard au taux de 3 fois le taux d'intérêt légal en vigueur seront appliquées, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40€.
+        </Text>
+      </View>
 
           <View style={{ marginTop: 12 }}>
             <Text style={{ fontSize: 8, marginBottom: 5 }}>Date : ___________________</Text>
@@ -296,6 +329,8 @@ interface FactureData {
   description?: string | null
   createdAt: Date
   dueDate?: Date | null
+  serviceDate?: Date | null // Date de la vente ou de la prestation
+  devisNumber?: string | null // Numéro du devis (bon de commande)
   totalHT: number
   totalTTC: number
   tvaRate: number
@@ -338,58 +373,62 @@ const FacturePDFDocument = ({ facture }: { facture: FactureData }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <Text style={styles.title}>FACTURE</Text>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Vendeur :</Text>
-        {facture.user.companyName && <Text>{facture.user.companyName}</Text>}
-        {facture.user.name && <Text>{facture.user.name}</Text>}
-        {facture.user.address && <Text>{facture.user.address}</Text>}
-        {facture.user.postalCode && facture.user.city && (
-          <Text>{`${facture.user.postalCode} ${facture.user.city}`}</Text>
+      
+      <View style={{ marginBottom: 10, alignItems: "center" }}>
+        <Text style={{ fontSize: 10, marginBottom: 3 }}>N° {facture.number}</Text>
+        <Text style={{ fontSize: 9 }}>Date d'émission : {formatDate(facture.createdAt)}</Text>
+        {facture.serviceDate && (
+          <Text style={{ fontSize: 9 }}>Date de la prestation : {formatDate(facture.serviceDate)}</Text>
         )}
-        {facture.user.phone && <Text>{`Tél. : ${facture.user.phone}`}</Text>}
-        {facture.user.email && <Text>{`Email : ${facture.user.email}`}</Text>}
-        {facture.user.siret && <Text>{`SIRET : ${facture.user.siret}`}</Text>}
-        {facture.user.rcs && <Text>{`RCS : ${facture.user.rcs}`}</Text>}
-        {facture.user.vatNumber && (
-          <Text>{`N° TVA : ${facture.user.vatNumber}`}</Text>
+        {facture.devisNumber && (
+          <Text style={{ fontSize: 9 }}>Devis n° : {facture.devisNumber}</Text>
         )}
       </View>
 
-      {facture.client && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Acheteur :</Text>
-          <Text>{formatClientName(facture.client)}</Text>
-          {facture.client.address && <Text>{facture.client.address}</Text>}
-          {facture.client.postalCode && facture.client.city && (
-            <Text>{`${facture.client.postalCode} ${facture.client.city}`}</Text>
+      <View style={{ flexDirection: "row", marginBottom: 20, gap: 30 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sectionTitle}>Vendeur :</Text>
+          {facture.user.companyName && <Text style={{ fontSize: 9 }}>{facture.user.companyName}</Text>}
+          {facture.user.name && <Text style={{ fontSize: 9 }}>{facture.user.name}</Text>}
+          {facture.user.address && <Text style={{ fontSize: 9 }}>{facture.user.address}</Text>}
+          {facture.user.postalCode && facture.user.city && (
+            <Text style={{ fontSize: 9 }}>{`${facture.user.postalCode} ${facture.user.city}`}</Text>
           )}
-          {facture.client.email && (
-            <Text>{`Email : ${facture.client.email}`}</Text>
-          )}
-          {facture.client.phone && (
-            <Text>{`Tél. : ${facture.client.phone}`}</Text>
+          {facture.user.phone && <Text style={{ fontSize: 9 }}>{`Tél. : ${facture.user.phone}`}</Text>}
+          {facture.user.email && <Text style={{ fontSize: 9 }}>{`Email : ${facture.user.email}`}</Text>}
+          {facture.user.siret && <Text style={{ fontSize: 9 }}>{`SIRET : ${facture.user.siret}`}</Text>}
+          {facture.user.rcs && <Text style={{ fontSize: 9 }}>{`RCS : ${facture.user.rcs}`}</Text>}
+          {facture.user.vatNumber && (
+            <Text style={{ fontSize: 9 }}>{`N° TVA : ${facture.user.vatNumber}`}</Text>
           )}
         </View>
-      )}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Facture n° {facture.number}</Text>
-        <Text>Titre : {facture.title}</Text>
-        <Text>Date d'émission : {formatDate(facture.createdAt)}</Text>
-        {facture.dueDate && (
-          <Text>Date d'échéance : {formatDate(facture.dueDate)}</Text>
+        {facture.client && (
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sectionTitle}>Acheteur :</Text>
+            <Text style={{ fontSize: 9 }}>{formatClientName(facture.client)}</Text>
+            {facture.client.address && <Text style={{ fontSize: 9 }}>{facture.client.address}</Text>}
+            {facture.client.postalCode && facture.client.city && (
+              <Text style={{ fontSize: 9 }}>{`${facture.client.postalCode} ${facture.client.city}`}</Text>
+            )}
+            {facture.client.email && (
+              <Text style={{ fontSize: 9 }}>{`Email : ${facture.client.email}`}</Text>
+            )}
+            {facture.client.phone && (
+              <Text style={{ fontSize: 9 }}>{`Tél. : ${facture.client.phone}`}</Text>
+            )}
+          </View>
         )}
       </View>
+
 
       {facture.description && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description :</Text>
-          <Text>{facture.description}</Text>
+        <View style={{ marginBottom: 15 }}>
+          <Text style={{ fontSize: 9, marginBottom: 5 }}>{facture.description}</Text>
         </View>
       )}
 
-      <View style={styles.section}>
+      <View style={{ marginBottom: 15 }}>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableCell, { flex: 4 }]}>Description</Text>
@@ -414,66 +453,75 @@ const FacturePDFDocument = ({ facture }: { facture: FactureData }) => (
         </View>
       </View>
 
-      <View style={styles.totals}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total HT :</Text>
-          <Text style={styles.totalValue}>
-            {formatCurrency(facture.totalHT)}
-          </Text>
-        </View>
-        {facture.isVatApplicable && (
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>
-              TVA ({facture.tvaRate}%) :
+      <View style={{ flexDirection: "row", marginTop: 15, gap: 35 }}>
+        <View style={{ flex: 1 }}>
+          <View style={styles.legal}>
+            <Text style={styles.sectionTitle}>Mentions légales :</Text>
+            {facture.paymentTerms && (
+              <Text style={{ fontSize: 8, marginBottom: 4 }}>Conditions de paiement : {facture.paymentTerms}</Text>
+            )}
+            {facture.paymentMethod && (
+              <Text style={{ fontSize: 8, marginBottom: 4 }}>Moyen de paiement : {facture.paymentMethod}</Text>
+            )}
+            {facture.dueDate && (
+              <Text style={{ fontSize: 8, marginBottom: 4 }}>Date d'échéance : {formatDate(facture.dueDate)}</Text>
+            )}
+            <Text style={{ fontSize: 8, marginBottom: 5 }}>
+              TVA :{" "}
+              {facture.isVatApplicable
+                ? `TVA applicable au taux de ${facture.tvaRate}%`
+                : "TVA non applicable (art. 293 B du CGI)"}
             </Text>
-            <Text style={styles.totalValue}>
-              {formatCurrency(facture.totalTTC - facture.totalHT)}
+            <Text style={{ fontSize: 7, lineHeight: 1.3, marginBottom: 12 }}>
+              En cas de retard de paiement, des pénalités de retard au taux de 3 fois le taux d'intérêt légal en vigueur seront appliquées, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40€.
             </Text>
           </View>
-        )}
-        <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { fontSize: 14 }]}>
-            Total TTC :
-          </Text>
-          <Text style={[styles.totalValue, { fontSize: 14 }]}>
-            {formatCurrency(facture.totalTTC)}
-          </Text>
         </View>
-        {facture.paidAmount > 0 && (
-          <>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Montant payé :</Text>
-              <Text style={styles.totalValue}>
-                {formatCurrency(facture.paidAmount)}
-              </Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Reste à payer :</Text>
-              <Text style={styles.totalValue}>
-                {formatCurrency(facture.totalTTC - facture.paidAmount)}
-              </Text>
-            </View>
-          </>
-        )}
-      </View>
 
-      <View style={styles.legal}>
-        <Text style={styles.sectionTitle}>Mentions légales :</Text>
-        {facture.paymentTerms && (
-          <Text>Conditions de paiement : {facture.paymentTerms}</Text>
-        )}
-        {facture.paymentMethod && (
-          <Text>Moyen de paiement : {facture.paymentMethod}</Text>
-        )}
-        {facture.dueDate && (
-          <Text>Date d'échéance : {formatDate(facture.dueDate)}</Text>
-        )}
-        <Text>
-          TVA :{" "}
-          {facture.isVatApplicable
-            ? `TVA applicable au taux de ${facture.tvaRate}%`
-            : "TVA non applicable"}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <View style={styles.totals}>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total HT :</Text>
+              <Text style={styles.totalValue}>
+                {formatCurrency(facture.totalHT)}
+              </Text>
+            </View>
+            {facture.isVatApplicable && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>
+                  TVA ({facture.tvaRate}%) :
+                </Text>
+                <Text style={styles.totalValue}>
+                  {formatCurrency(facture.totalTTC - facture.totalHT)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { fontSize: 11 }]}>
+                Total TTC :
+              </Text>
+              <Text style={[styles.totalValue, { fontSize: 11 }]}>
+                {formatCurrency(facture.totalTTC)}
+              </Text>
+            </View>
+            {facture.paidAmount > 0 && (
+              <>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Montant payé :</Text>
+                  <Text style={styles.totalValue}>
+                    {formatCurrency(facture.paidAmount)}
+                  </Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Reste à payer :</Text>
+                  <Text style={styles.totalValue}>
+                    {formatCurrency(facture.totalTTC - facture.paidAmount)}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
       </View>
     </Page>
   </Document>
