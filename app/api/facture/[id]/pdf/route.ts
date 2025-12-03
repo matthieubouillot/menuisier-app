@@ -69,7 +69,7 @@ export async function GET(
       client: facture.client,
     })
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="Facture-${facture.number}.pdf"`,
