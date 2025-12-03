@@ -10,30 +10,41 @@ function createPrismaClient() {
   // Récupérer DATABASE_URL depuis l'environnement avec une valeur par défaut
   const dbUrl = process.env.DATABASE_URL || 'file:./dev.db'
   
-  // Extraire le chemin du fichier (enlever le préfixe "file:")
-  let databasePath = dbUrl.replace(/^file:/, '')
+  // Détecter si on utilise PostgreSQL (production) ou SQLite (développement)
+  const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://')
   
-  // Si c'est un chemin relatif, utiliser le chemin depuis la racine du projet
-  if (databasePath.startsWith('./')) {
-    databasePath = databasePath.substring(2) // Enlever "./"
-  }
-  
-  try {
-    // L'adaptateur PrismaBetterSqlite3 attend un objet avec une propriété 'url'
-    const adapter = new PrismaBetterSqlite3({
-      url: databasePath
-    })
-    
+  if (isPostgreSQL) {
+    // PostgreSQL : pas besoin d'adaptateur, Prisma gère nativement
     return new PrismaClient({
-      adapter,
       log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     })
-  } catch (error) {
-    console.error('Erreur lors de la création du client Prisma:', error)
-    console.error('Database path attempted:', databasePath)
-    console.error('DATABASE_URL from env:', process.env.DATABASE_URL)
-    console.error('dbUrl used:', dbUrl)
-    throw error
+  } else {
+    // SQLite : utiliser l'adaptateur better-sqlite3
+    // Extraire le chemin du fichier (enlever le préfixe "file:")
+    let databasePath = dbUrl.replace(/^file:/, '')
+    
+    // Si c'est un chemin relatif, utiliser le chemin depuis la racine du projet
+    if (databasePath.startsWith('./')) {
+      databasePath = databasePath.substring(2) // Enlever "./"
+    }
+    
+    try {
+      // L'adaptateur PrismaBetterSqlite3 attend un objet avec une propriété 'url'
+      const adapter = new PrismaBetterSqlite3({
+        url: databasePath
+      })
+      
+      return new PrismaClient({
+        adapter,
+        log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      })
+    } catch (error) {
+      console.error('Erreur lors de la création du client Prisma:', error)
+      console.error('Database path attempted:', databasePath)
+      console.error('DATABASE_URL from env:', process.env.DATABASE_URL)
+      console.error('dbUrl used:', dbUrl)
+      throw error
+    }
   }
 }
 
