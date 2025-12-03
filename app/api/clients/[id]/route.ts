@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -12,7 +12,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 400 })
     }
