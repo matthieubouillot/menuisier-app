@@ -85,9 +85,17 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!paymentTerms || paymentTerms.trim() === "") {
+    // Récupérer les paramètres utilisateur pour paymentTerms si non fourni
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { paymentTerms: true }
+    })
+
+    const finalPaymentTerms = paymentTerms || user?.paymentTerms || null
+    
+    if (!finalPaymentTerms || finalPaymentTerms.trim() === "") {
       return NextResponse.json(
-        { error: "Le délai de paiement est obligatoire" },
+        { error: "Le délai de paiement est obligatoire. Veuillez le configurer dans vos paramètres entreprise." },
         { status: 400 }
       )
     }
@@ -132,7 +140,7 @@ export async function POST(request: Request) {
         tvaRate: parseFloat(tvaRate) || 20,
         validUntil: validUntil ? new Date(validUntil) : null,
         advancePayment: advancePayment ? parseFloat(advancePayment) : null,
-        paymentTerms: paymentTerms || null,
+        paymentTerms: finalPaymentTerms,
         isVatApplicable: isVatApplicable !== false,
         cgvReference: cgvReference || null,
         workStartDate: workStartDate ? new Date(workStartDate) : null,

@@ -30,6 +30,7 @@ export default function NouveauDevisPage() {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [calculations, setCalculations] = useState<any[]>([]);
   const [selectedCalculation, setSelectedCalculation] = useState<any | null>(null);
+  const [userPaymentTerms, setUserPaymentTerms] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -40,7 +41,6 @@ export default function NouveauDevisPage() {
     isVatApplicable: true,
     validUntil: "",
     advancePayment: "",
-    paymentTerms: "",
     cgvReference: "",
     workStartDate: "",
     workDuration: "",
@@ -75,9 +75,9 @@ export default function NouveauDevisPage() {
       if (res.ok) {
         const user = await res.json();
         // Pré-remplir les champs depuis les paramètres utilisateur
+        setUserPaymentTerms(user.paymentTerms || null);
         setFormData((prev) => ({
           ...prev,
-          paymentTerms: user.paymentTerms || "30 jours",
           // Ne pas pré-remplir insuranceInfo - c'est un champ spécifique à chaque devis
           // Calculer la date de validité par défaut (30 jours)
           validUntil: prev.validUntil || getDefaultValidUntil(),
@@ -432,7 +432,7 @@ export default function NouveauDevisPage() {
           advancePayment: formData.advancePayment
             ? parseFloat(formData.advancePayment)
             : null,
-          paymentTerms: formData.paymentTerms || null,
+          paymentTerms: userPaymentTerms || null,
           isVatApplicable: formData.isVatApplicable !== false,
           cgvReference: formData.cgvReference || null,
           workStartDate: formData.workStartDate
@@ -610,51 +610,24 @@ export default function NouveauDevisPage() {
                       />
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="advancePayment">Acompte (€)</Label>
-                      <Input
-                        id="advancePayment"
-                        type="number"
-                        value={formData.advancePayment}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            advancePayment: e.target.value,
-                          })
-                        }
-                        min="0"
-                        step="0.01"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Montant de l'acompte éventuel
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="paymentTerms">Délai de paiement *</Label>
-                      <Select
-                        id="paymentTerms"
-                        value={formData.paymentTerms}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            paymentTerms: e.target.value,
-                          })
-                        }
-                        required
-                      >
-                        <option value="">Sélectionner un délai</option>
-                        <option value="À la commande">À la commande</option>
-                        <option value="À réception">À réception</option>
-                        <option value="15 jours">15 jours</option>
-                        <option value="30 jours">30 jours</option>
-                        <option value="45 jours">45 jours</option>
-                        <option value="60 jours">60 jours</option>
-                        <option value="Acompte à la commande, solde à la livraison">
-                          Acompte à la commande, solde à la livraison
-                        </option>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="advancePayment">Acompte (€)</Label>
+                    <Input
+                      id="advancePayment"
+                      type="number"
+                      value={formData.advancePayment}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          advancePayment: e.target.value,
+                        })
+                      }
+                      min="0"
+                      step="0.01"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Montant de l'acompte éventuel
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
