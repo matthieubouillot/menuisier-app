@@ -86,6 +86,7 @@ providers.push(
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Autoriser tous les hosts (nécessaire pour Render)
   providers,
   session: {
     strategy: "jwt"
