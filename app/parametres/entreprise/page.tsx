@@ -49,29 +49,6 @@ export default async function EntrepriseSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-xl transition-shadow duration-200">
-        <CardHeader>
-          <CardTitle className="text-xl">Informations obligatoires</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <div>
-            <p className="font-semibold text-foreground mb-1">Pour les factures :</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li><strong>SIRET</strong> : Obligatoire pour toutes les factures</li>
-              <li><strong>Adresse complète</strong> : Adresse, code postal et ville</li>
-              <li><strong>Numéro TVA intracommunautaire</strong> : Obligatoire si vous êtes assujetti à la TVA</li>
-              <li><strong>RCS</strong> : Obligatoire si vous êtes immatriculé au RCS</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold text-foreground mb-1">Pour les devis :</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Adresse complète fortement recommandée</li>
-              <li>Date de validité du devis obligatoire</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
     </>
   )
 }

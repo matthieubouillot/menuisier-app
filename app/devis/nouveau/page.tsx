@@ -573,9 +573,6 @@ export default function NouveauDevisPage() {
                         }
                         required
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Obligatoire pour un devis légal
-                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="isVatApplicable">TVA applicable</Label>
@@ -657,9 +654,6 @@ export default function NouveauDevisPage() {
                           Acompte à la commande, solde à la livraison
                         </option>
                       </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Obligatoire pour un devis légal (pré-rempli depuis vos paramètres)
-                      </p>
                     </div>
                   </div>
 
@@ -679,9 +673,6 @@ export default function NouveauDevisPage() {
                         required
                         min={new Date().toISOString().split("T")[0]} // Pas de date dans le passé
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Obligatoire légalement (7 jours par défaut)
-                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="workDuration">Durée estimée des travaux *</Label>
@@ -709,9 +700,6 @@ export default function NouveauDevisPage() {
                         <option value="5 mois">5 mois</option>
                         <option value="6 mois">6 mois</option>
                       </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Obligatoire légalement (3-4 semaines par défaut)
-                      </p>
                     </div>
                   </div>
 
