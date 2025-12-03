@@ -18,6 +18,7 @@
     "@prisma/adapter-better-sqlite3": "^7.0.1",
     "@prisma/client": "^7.0.1",
     "@react-pdf/renderer": "^4.3.1",
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/nodemailer": "^7.0.4",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.4.6",
@@ -34,17 +35,16 @@
     "react-hook-form": "^7.66.1",
     "recharts": "^3.5.0",
     "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.0.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.4",
-    "tailwindcss": "^4.0.0",
     "typescript": "^5"
   }
 }
