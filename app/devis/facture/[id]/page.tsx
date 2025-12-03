@@ -24,7 +24,11 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
       client: true,
       project: true,
       items: true,
-      devis: true,
+      devis: {
+        select: {
+          number: true,
+        },
+      },
       user: {
         select: {
           name: true,
@@ -70,8 +74,8 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
             {facture.serviceDate && (
               <p className="text-muted-foreground text-sm">Date de prestation : {formatDate(facture.serviceDate)}</p>
             )}
-            {facture.devisNumber && (
-              <p className="text-muted-foreground text-sm">Devis d'origine : {facture.devisNumber}</p>
+            {facture.devis?.number && (
+              <p className="text-muted-foreground text-sm">Devis d'origine : {facture.devis.number}</p>
             )}
             {facture.dueDate && (
               <p className="text-muted-foreground text-sm">Échéance : {formatDate(facture.dueDate)}</p>
@@ -202,10 +206,10 @@ export default async function FactureDetailPage({ params }: { params: Promise<{ 
                       <p className="font-medium">{formatDate(facture.serviceDate)}</p>
                     </div>
                   )}
-                  {facture.devisNumber && (
+                  {facture.devis?.number && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Devis d'origine</p>
-                      <p className="font-medium">{facture.devisNumber}</p>
+                      <p className="font-medium">{facture.devis.number}</p>
                     </div>
                   )}
                   {facture.dueDate && (
