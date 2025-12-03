@@ -25,7 +25,7 @@ Remplissez le formulaire :
 - **User** : `menuisier`
 - **Region** : Choisissez la région la plus proche (ex: `Frankfurt` pour l'Europe)
 - **PostgreSQL Version** : `Latest` (ou la version recommandée)
-- **Plan** : 
+- **Plan** :
   - Pour tester : `Free` (gratuit, mais limité à 90 jours)
   - Pour production : `Starter` ($7/mois) ou supérieur
 
@@ -37,6 +37,7 @@ Remplissez le formulaire :
 4. **Copiez la "Internal Database URL"** (vous en aurez besoin plus tard)
 
    Elle ressemble à :
+
    ```
    postgresql://menuisier:password@dpg-xxxxx-a.frankfurt-postgres.render.com/menuisier
    ```
@@ -66,20 +67,21 @@ Remplissez le formulaire :
 Remplissez les champs suivants :
 
 #### Informations de base :
+
 - **Name** : `menuisier-app`
 - **Region** : Même région que votre base de données (ex: `Frankfurt`)
 - **Branch** : `main` (ou `master` selon votre dépôt)
 - **Root Directory** : Laissez vide (racine du projet)
 - **Runtime** : `Node`
-- **Build Command** : 
+- **Build Command** :
   ```
   npm install && npx prisma generate && npx prisma migrate deploy && npm run build
   ```
-- **Start Command** : 
+- **Start Command** :
   ```
   npm start
   ```
-- **Plan** : 
+- **Plan** :
   - Pour tester : `Free` (gratuit, mais se met en veille après 15 min d'inactivité)
   - Pour production : `Starter` ($7/mois) ou supérieur
 
@@ -98,10 +100,12 @@ Dans le formulaire de création du service web, il y a une section **"Environmen
 Ajoutez ces variables **une par une** :
 
 #### 1. `NODE_ENV`
+
 - **Key** : `NODE_ENV`
 - **Value** : `production`
 
 #### 2. `DATABASE_URL`
+
 - **Key** : `DATABASE_URL`
 - **Value** : Collez la **Internal Database URL** que vous avez copiée à l'étape 1.3
   ```
@@ -109,20 +113,23 @@ Ajoutez ces variables **une par une** :
   ```
 
 #### 3. `NEXTAUTH_SECRET`
+
 - **Key** : `NEXTAUTH_SECRET`
 - **Value** : Générez une clé secrète aléatoire
 
   **Pour générer la clé** :
-  
+
   **Option A - En ligne de commande** :
+
   ```bash
   openssl rand -base64 32
   ```
-  
+
   **Option B - En ligne** :
   Allez sur https://generate-secret.vercel.app/32
-  
+
   **Option C - Node.js** :
+
   ```bash
   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
   ```
@@ -130,9 +137,10 @@ Ajoutez ces variables **une par une** :
   Copiez le résultat et collez-le comme valeur.
 
 #### 4. `NEXTAUTH_URL`
+
 - **Key** : `NEXTAUTH_URL`
 - **Value** : `https://menuisier-app.onrender.com`
-  
+
   ⚠️ **Note** : Remplacez `menuisier-app` par le nom exact que vous avez donné à votre service web à l'étape 2.3. Render génère l'URL automatiquement, vous pouvez la modifier après la création du service.
 
 ### 3.3 Variables Optionnelles (OAuth)
@@ -140,6 +148,7 @@ Ajoutez ces variables **une par une** :
 Si vous voulez activer la connexion Google/GitHub :
 
 #### Google OAuth
+
 - **Key** : `GOOGLE_CLIENT_ID`
 - **Value** : Votre Google Client ID
 
@@ -147,11 +156,13 @@ Si vous voulez activer la connexion Google/GitHub :
 - **Value** : Votre Google Client Secret
 
 ⚠️ **Important** : Dans Google Cloud Console, ajoutez cette URL de redirection :
+
 ```
 https://menuisier-app.onrender.com/api/auth/callback/google
 ```
 
 #### GitHub OAuth
+
 - **Key** : `GITHUB_CLIENT_ID`
 - **Value** : Votre GitHub Client ID
 
@@ -159,6 +170,7 @@ https://menuisier-app.onrender.com/api/auth/callback/google
 - **Value** : Votre GitHub Client Secret
 
 ⚠️ **Important** : Dans GitHub OAuth App settings, ajoutez cette URL de redirection :
+
 ```
 https://menuisier-app.onrender.com/api/auth/callback/github
 ```
@@ -257,6 +269,7 @@ Une fois le build terminé :
 ### Erreur : "Database connection failed"
 
 **Solution** :
+
 1. Vérifiez que `DATABASE_URL` est correct
 2. Vérifiez que vous utilisez la **Internal Database URL** (pas l'externe)
 3. Vérifiez que la base de données est bien créée et active
@@ -264,12 +277,14 @@ Une fois le build terminé :
 ### Erreur : "Prisma Client not generated"
 
 **Solution** :
+
 1. Vérifiez que `npx prisma generate` est dans le build command
 2. Regardez les logs de build pour voir l'erreur exacte
 
 ### Erreur : "Migration failed"
 
 **Solution** :
+
 1. Vérifiez que la migration existe dans `prisma/migrations/`
 2. Vérifiez les logs pour voir quelle migration échoue
 3. Assurez-vous que `npx prisma migrate deploy` est dans le build command
@@ -277,6 +292,7 @@ Une fois le build terminé :
 ### Erreur : "NextAuth secret missing"
 
 **Solution** :
+
 1. Vérifiez que `NEXTAUTH_SECRET` est défini
 2. Vérifiez que la valeur n'est pas vide
 3. Régénérez une nouvelle clé si nécessaire
@@ -284,6 +300,7 @@ Une fois le build terminé :
 ### L'application redémarre en boucle
 
 **Solution** :
+
 1. Vérifiez les logs dans Render
 2. Vérifiez que toutes les variables d'environnement sont définies
 3. Vérifiez que `NEXTAUTH_URL` correspond à l'URL réelle de votre service
@@ -291,6 +308,7 @@ Une fois le build terminé :
 ### L'application se met en veille (plan gratuit)
 
 **Solution** :
+
 - C'est normal avec le plan gratuit
 - Le premier démarrage après veille prend 30-60 secondes
 - Pour éviter cela, passez au plan payant
@@ -324,7 +342,7 @@ Cochez chaque étape au fur et à mesure :
 
 ## 🎉 Félicitations !
 
-Votre application est maintenant déployée sur Render ! 
+Votre application est maintenant déployée sur Render !
 
 ### Prochaines Étapes
 
@@ -349,4 +367,3 @@ Votre application est maintenant déployée sur Render !
 2. **Logs** : Consultez régulièrement les logs pour détecter les problèmes
 3. **Variables d'environnement** : Ne commitez jamais vos variables dans Git
 4. **Mises à jour** : Les déploiements automatiques sont activés par défaut sur la branche `main`
-
