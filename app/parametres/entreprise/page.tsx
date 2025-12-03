@@ -26,6 +26,7 @@ export default async function EntrepriseSettingsPage() {
       vatNumber: true,
       legalMentions: true,
       paymentTerms: true,
+      paymentMethod: true,
     },
   })
 
