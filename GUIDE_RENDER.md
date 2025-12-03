@@ -266,6 +266,32 @@ Une fois le build terminé :
 
 ## 🐛 Dépannage
 
+### Erreur : "migrate found failed migrations in the target database"
+
+**Symptôme** :
+```
+Error: P3009
+migrate found failed migrations in the target database, new migrations will not be applied.
+The `20241126000000_add_legal_fields_and_client_tokens` migration started at ... failed
+```
+
+**Solution** : La base de données contient une trace d'une migration SQLite échouée.
+
+**Option 1 - Réinitialiser la base (Recommandé pour premier déploiement)** :
+1. Dans Render, allez sur votre base de données PostgreSQL
+2. Cliquez sur **"Reset Database"** ou supprimez et recréez-la
+3. **Copiez la nouvelle Internal Database URL**
+4. Mettez à jour `DATABASE_URL` dans votre service web
+5. Redéployez
+
+**Option 2 - Nettoyer via SQL** :
+Si vous avez accès à la base de données :
+```sql
+DELETE FROM "_prisma_migrations" 
+WHERE migration_name = '20241126000000_add_legal_fields_and_client_tokens';
+```
+Puis redéployez.
+
 ### Erreur : "Database connection failed"
 
 **Solution** :
