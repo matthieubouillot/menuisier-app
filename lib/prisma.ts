@@ -17,8 +17,18 @@ function createPrismaClient() {
   const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://')
   
   if (isPostgreSQL) {
-    // PostgreSQL : pas besoin d'adaptateur, Prisma gère nativement
+    // PostgreSQL : utiliser l'adaptateur pg (requis avec Prisma 7.0.1+)
+    const { PrismaPg } = require('@prisma/adapter-pg')
+    const { Pool } = require('pg')
+    
+    const pool = new Pool({
+      connectionString: dbUrl,
+    })
+    
+    const adapter = new PrismaPg(pool)
+    
     return new PrismaClient({
+      adapter,
       log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     })
   } else {
