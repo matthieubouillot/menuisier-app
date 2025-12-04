@@ -13,60 +13,64 @@ export default async function TutorielPage() {
 
   const steps = [
     {
+      icon: Shield,
+      title: "1. Configurer vos informations légales",
+      description: "Remplissez une seule fois, utilisez partout",
+      details: [
+        "Allez dans 'Paramètres' > 'Entreprise'",
+        "Remplissez vos informations légales (SIRET, adresse, TVA, etc.)",
+        "Configurez vos conditions de paiement par défaut",
+        "Ces informations apparaîtront automatiquement sur tous vos devis et factures",
+        "⚠️ Important : Faites-le en premier, c'est nécessaire pour créer des devis conformes"
+      ]
+    },
+    {
+      icon: Users,
+      title: "2. Ajouter vos premiers clients",
+      description: "Centralisez toutes les informations de vos clients",
+      details: [
+        "Allez dans 'Paramètres' > 'Clients'",
+        "Cliquez sur 'Ajouter un client'",
+        "Remplissez les informations (nom, adresse, téléphone, email)",
+        "Choisissez le type : particulier ou professionnel",
+        "Vos clients seront disponibles pour vos projets et devis"
+      ]
+    },
+    {
+      icon: Calculator,
+      title: "3. Créer votre catalogue de matériaux",
+      description: "Préparez votre base de données de matériaux",
+      details: [
+        "Allez dans 'Mon atelier' > 'Catalogue'",
+        "Ajoutez vos matériaux (bois, quincaillerie, colle, etc.)",
+        "Définissez les prix unitaires et les unités de mesure",
+        "Ce catalogue servira pour vos calculs de chiffrage",
+        "Vous pourrez ensuite utiliser le calculateur pour estimer vos besoins"
+      ]
+    },
+    {
       icon: FileText,
-      title: "1. Créer vos premiers devis",
+      title: "4. Créer votre premier devis",
       description: "Générez des devis professionnels en quelques clics",
       details: [
         "Allez dans 'Devis & Factures' puis cliquez sur 'Nouveau devis'",
-        "Sélectionnez un projet existant ou créez-en un nouveau",
+        "Sélectionnez un client (ou créez-en un nouveau)",
+        "Choisissez ou créez un projet associé",
         "Ajoutez vos lignes de prestation (matériaux, main-d'œuvre, etc.)",
         "Le système calcule automatiquement les totaux HT et TTC",
         "Téléchargez le PDF professionnel prêt à envoyer à vos clients"
       ]
     },
     {
-      icon: Calculator,
-      title: "2. Utiliser le calculateur de matériaux",
-      description: "Estimez précisément vos besoins en matériaux",
-      details: [
-        "Allez dans 'Mon atelier' > 'Chiffrage'",
-        "Créez un catalogue de vos matériaux avec leurs prix",
-        "Sélectionnez un type de projet (cuisine, escalier, fenêtre, etc.)",
-        "Entrez les dimensions et le système calcule automatiquement",
-        "Exportez directement vers un devis pour gagner du temps"
-      ]
-    },
-    {
-      icon: Users,
-      title: "3. Gérer vos clients",
-      description: "Centralisez toutes les informations de vos clients",
-      details: [
-        "Allez dans 'Paramètres' > 'Clients'",
-        "Ajoutez vos clients (particuliers ou professionnels)",
-        "Associez-les à vos projets et devis",
-        "Conservez toutes leurs informations en un seul endroit"
-      ]
-    },
-    {
       icon: Calendar,
-      title: "4. Organiser votre planning",
+      title: "5. Organiser votre planning",
       description: "Planifiez vos chantiers et rendez-vous",
       details: [
         "Allez dans 'Calendrier'",
         "Créez des événements pour vos chantiers",
+        "Associez-les à vos projets existants",
         "Planifiez vos rendez-vous clients",
         "Visualisez votre planning en un coup d'œil"
-      ]
-    },
-    {
-      icon: Shield,
-      title: "5. Configurer vos informations légales",
-      description: "Remplissez une seule fois, utilisez partout",
-      details: [
-        "Allez dans 'Paramètres' > 'Entreprise'",
-        "Remplissez vos informations légales (SIRET, adresse, TVA, etc.)",
-        "Configurez vos conditions de paiement par défaut",
-        "Ces informations apparaîtront automatiquement sur tous vos devis et factures"
       ]
     }
   ]
