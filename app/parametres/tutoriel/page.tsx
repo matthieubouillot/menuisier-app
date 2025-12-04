@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Clock, FileText, Calculator, Calendar, Users, TrendingUp, Zap } from "lucide-react"
+import { Navbar } from "@/components/layout/navbar"
+import { CheckCircle2, FileText, Calculator, Calendar, Users, TrendingUp, Clock, Shield, Zap } from "lucide-react"
 
 export default async function TutorielPage() {
   const session = await auth()
@@ -13,26 +14,26 @@ export default async function TutorielPage() {
   const steps = [
     {
       icon: FileText,
-      title: "1. Créer votre premier devis",
+      title: "1. Créer vos premiers devis",
       description: "Générez des devis professionnels en quelques clics",
       details: [
-        "Allez dans 'Devis & Factures' → 'Nouveau devis'",
-        "Sélectionnez un projet (ou créez-en un)",
-        "Ajoutez vos lignes de prestation avec quantités et prix",
-        "Le devis est automatiquement numéroté et conforme à la législation française",
-        "Téléchargez le PDF et envoyez-le à votre client"
+        "Allez dans 'Devis & Factures' puis cliquez sur 'Nouveau devis'",
+        "Sélectionnez un projet existant ou créez-en un nouveau",
+        "Ajoutez vos lignes de prestation (matériaux, main-d'œuvre, etc.)",
+        "Le système calcule automatiquement les totaux HT et TTC",
+        "Téléchargez le PDF professionnel prêt à envoyer à vos clients"
       ]
     },
     {
       icon: Calculator,
-      title: "2. Calculer vos matériaux",
-      description: "Optimisez vos coûts avec le calculateur de matériaux",
+      title: "2. Utiliser le calculateur de matériaux",
+      description: "Estimez précisément vos besoins en matériaux",
       details: [
-        "Allez dans 'Mon atelier' → 'Chiffrage'",
-        "Sélectionnez le type de projet (cuisine, escalier, fenêtre, etc.)",
-        "Entrez les dimensions de votre projet",
-        "Le système calcule automatiquement les matériaux nécessaires",
-        "Ajoutez une marge et la main-d'œuvre pour obtenir votre prix de vente"
+        "Allez dans 'Mon atelier' > 'Chiffrage'",
+        "Créez un catalogue de vos matériaux avec leurs prix",
+        "Sélectionnez un type de projet (cuisine, escalier, fenêtre, etc.)",
+        "Entrez les dimensions et le système calcule automatiquement",
+        "Exportez directement vers un devis pour gagner du temps"
       ]
     },
     {
@@ -40,10 +41,10 @@ export default async function TutorielPage() {
       title: "3. Gérer vos clients",
       description: "Centralisez toutes les informations de vos clients",
       details: [
-        "Allez dans 'Paramètres' → 'Clients'",
+        "Allez dans 'Paramètres' > 'Clients'",
         "Ajoutez vos clients (particuliers ou professionnels)",
         "Associez-les à vos projets et devis",
-        "Tous les documents sont automatiquement liés"
+        "Conservez toutes leurs informations en un seul endroit"
       ]
     },
     {
@@ -54,81 +55,73 @@ export default async function TutorielPage() {
         "Allez dans 'Calendrier'",
         "Créez des événements pour vos chantiers",
         "Planifiez vos rendez-vous clients",
-        "Suivez vos deadlines et échéances"
+        "Visualisez votre planning en un coup d'œil"
       ]
     },
     {
-      icon: FileText,
-      title: "5. Convertir un devis en facture",
-      description: "Transformez vos devis signés en factures en un clic",
+      icon: Shield,
+      title: "5. Configurer vos informations légales",
+      description: "Remplissez une seule fois, utilisez partout",
       details: [
-        "Allez dans 'Devis & Factures'",
-        "Ouvrez un devis signé",
-        "Cliquez sur 'Convertir en facture'",
-        "La facture reprend automatiquement toutes les informations du devis",
-        "Téléchargez et envoyez la facture à votre client"
-      ]
-    },
-    {
-      icon: TrendingUp,
-      title: "6. Suivre votre activité",
-      description: "Analysez vos performances avec le tableau de bord",
-      details: [
-        "Consultez vos statistiques sur le tableau de bord",
-        "Suivez vos devis en cours, signés et refusés",
-        "Visualisez votre chiffre d'affaires",
-        "Identifiez vos meilleurs clients"
+        "Allez dans 'Paramètres' > 'Entreprise'",
+        "Remplissez vos informations légales (SIRET, adresse, TVA, etc.)",
+        "Configurez vos conditions de paiement par défaut",
+        "Ces informations apparaîtront automatiquement sur tous vos devis et factures"
       ]
     }
   ]
 
   const benefits = [
     {
-      icon: Zap,
+      icon: Clock,
       title: "Gain de temps",
-      description: "Réduisez de 70% le temps passé sur l'administration"
+      description: "Réduisez de 70% le temps passé sur l'administration. Créez un devis en 5 minutes au lieu de 30."
     },
     {
       icon: TrendingUp,
-      title: "ROI garanti",
-      description: "Récupérez votre investissement en moins de 2 mois"
+      title: "Augmentation du chiffre d'affaires",
+      description: "Envoyez plus de devis, plus rapidement. Les clients signent plus vite quand ils reçoivent un devis professionnel rapidement."
+    },
+    {
+      icon: Zap,
+      title: "Moins d'erreurs",
+      description: "Calculs automatiques, conformité légale garantie. Plus d'erreurs de calcul ou de mentions légales oubliées."
     },
     {
       icon: CheckCircle2,
-      title: "Conformité légale",
-      description: "Tous vos documents sont conformes à la législation française"
-    },
-    {
-      icon: Clock,
-      title: "Disponible 24/7",
-      description: "Accédez à vos données depuis n'importe où, à tout moment"
+      title: "Professionnalisme",
+      description: "Des documents PDF impeccables qui renforcent votre image de marque et inspirent confiance à vos clients."
     }
   ]
 
   return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2 text-foreground">Guide de démarrage</h2>
-        <p className="text-muted-foreground">
-          Découvrez comment utiliser Menuisier Pro pour optimiser votre activité et gagner du temps
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="mb-8 lg:mb-12">
+          <h1 className="text-4xl font-bold mb-4 text-foreground">
+            🎯 Guide de démarrage rapide
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-3xl">
+            Bienvenue sur Menuisier Pro ! Ce guide vous accompagne dans vos premiers pas pour maîtriser l'outil et optimiser votre productivité.
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon
             return (
               <Card key={index} className="hover:shadow-xl transition-shadow duration-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-primary/10 rounded-xl">
                       <Icon className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-lg">{benefit.title}</CardTitle>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-2">{benefit.title}</h3>
+                      <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{benefit.description}</p>
                 </CardContent>
               </Card>
             )
@@ -136,18 +129,22 @@ export default async function TutorielPage() {
         </div>
 
         <div className="space-y-6">
+          <h2 className="text-3xl font-bold mb-6 text-foreground">
+            📚 Étapes pour démarrer
+          </h2>
+          
           {steps.map((step, index) => {
             const Icon = step.icon
             return (
               <Card key={index} className="hover:shadow-xl transition-shadow duration-200">
                 <CardHeader>
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-primary/10 rounded-xl">
                       <Icon className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{step.title}</CardTitle>
-                      <CardDescription className="text-base">{step.description}</CardDescription>
+                      <CardTitle className="text-xl">{step.title}</CardTitle>
+                      <CardDescription className="mt-1">{step.description}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -155,7 +152,7 @@ export default async function TutorielPage() {
                   <ul className="space-y-2">
                     {step.details.map((detail, detailIndex) => (
                       <li key={detailIndex} className="flex items-start space-x-2">
-                        <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-muted-foreground">{detail}</span>
                       </li>
                     ))}
@@ -166,21 +163,38 @@ export default async function TutorielPage() {
           })}
         </div>
 
-        <Card className="mt-12 bg-primary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-2xl">💡 Astuce</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-base text-muted-foreground mb-4">
-              <strong>Conseil d'expert :</strong> Commencez par configurer vos informations légales dans les paramètres entreprise. 
-              Ensuite, créez votre premier client et votre premier projet. Vous pourrez alors générer votre premier devis en quelques minutes !
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Besoin d'aide ? N'hésitez pas à nous contacter. Nous sommes là pour vous accompagner dans votre réussite.
-            </p>
+        <Card className="mt-8 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-4 text-foreground">
+                💡 Astuce ROI
+              </h3>
+              <p className="text-lg text-muted-foreground mb-4 max-w-2xl mx-auto">
+                Les menuisiers qui utilisent Menuisier Pro gagnent en moyenne <strong className="text-primary">5 heures par semaine</strong> sur l'administration.
+              </p>
+              <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+                Cela représente <strong className="text-primary">20 heures par mois</strong> que vous pouvez consacrer à votre cœur de métier : créer, fabriquer, et satisfaire vos clients.
+              </p>
+              <p className="text-sm text-muted-foreground mt-4 max-w-2xl mx-auto">
+                💰 <strong>Calcul rapide :</strong> Si vous facturez 50€/h, c'est <strong className="text-primary">1000€ de valeur ajoutée par mois</strong> récupérée sur l'administration.
+              </p>
+            </div>
           </CardContent>
         </Card>
-    </>
+
+        <Card className="mt-6">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-4 text-foreground">
+                🚀 Prêt à commencer ?
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Commencez par configurer vos informations légales dans les paramètres, puis créez votre premier devis !
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
-
