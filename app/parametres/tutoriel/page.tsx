@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Navbar } from "@/components/layout/navbar"
 import { CheckCircle2, FileText, Calculator, Calendar, Users, TrendingUp, Clock, Shield, Zap } from "lucide-react"
 
 export default async function TutorielPage() {
@@ -99,9 +98,7 @@ export default async function TutorielPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+    <>
         <div className="mb-8 lg:mb-12">
           <h1 className="text-4xl font-bold mb-4 text-foreground">
             🎯 Guide de démarrage rapide
@@ -198,7 +195,6 @@ export default async function TutorielPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+    </>
   )
 }
