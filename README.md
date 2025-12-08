@@ -1,6 +1,19 @@
 # 🪵 Menuisier Pro
 
-Application web complète de gestion pour les menuisiers et artisans du bois. Optimisez votre administration, créez des devis professionnels en quelques clics, et gagnez du temps sur votre gestion quotidienne.
+Application web complète de gestion pour **tous les types d'ateliers de menuiserie** : artisans indépendants, petites entreprises, spécialistes (cuisines, escaliers, fenêtres, agencement, mobilier sur mesure, etc.). Optimisez votre administration, créez des devis professionnels en quelques clics, et gagnez du temps sur votre gestion quotidienne.
+
+## 🎯 Pour qui ?
+
+✅ **Artisans menuisiers indépendants**  
+✅ **Petites entreprises de menuiserie**  
+✅ **Spécialistes en cuisines**  
+✅ **Fabricants d'escaliers**  
+✅ **Menuisiers agenceurs**  
+✅ **Fabricants de mobilier sur mesure**  
+✅ **Menuisiers spécialisés fenêtres/portes**  
+✅ **Tous les métiers du bois nécessitant des devis et factures**
+
+L'application est **100% flexible** : vous pouvez créer n'importe quel type de projet, ajouter vos propres matériaux et prestations, et personnaliser vos devis selon vos besoins spécifiques.
 
 ## ✨ Fonctionnalités principales
 
@@ -14,11 +27,13 @@ Application web complète de gestion pour les menuisiers et artisans du bois. Op
 - **Accès client sécurisé** : Partagez vos devis/factures via un lien sécurisé avec token
 
 ### 🧮 Calculateur de Matériaux & Chiffrage
-- **Catalogue de matériaux** : Gérez votre base de données de matériaux avec prix unitaires
-- **Calcul automatique** : Estimez précisément vos besoins en matériaux selon le type de projet
+- **Catalogue de matériaux personnalisable** : Gérez votre propre base de données de matériaux avec prix unitaires
+- **Catégories flexibles** : Bois, quincaillerie, fournitures, finitions, et catégories personnalisées
+- **Unités de mesure variées** : m², m, m³, kg, unité, lot, forfait, paire, pièce, boîte, rouleau, panneau, etc.
+- **Lignes libres** : Ajoutez n'importe quelle prestation personnalisée à vos devis
 - **Chiffrage intelligent** : Calculez automatiquement les coûts avec marge et main-d'œuvre
 - **Export vers devis** : Exportez directement vos calculs vers un devis
-- **Lignes libres** : Ajoutez des prestations personnalisées à vos devis
+- **Adaptable à tous les projets** : Cuisines, escaliers, fenêtres, mobilier, agencement, sur-mesure, etc.
 
 ### 👥 Gestion Clients & Projets
 - **Base de données clients** : Centralisez toutes les informations de vos clients
