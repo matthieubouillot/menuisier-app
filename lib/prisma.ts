@@ -1,72 +1,77 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined
+  var prisma: PrismaClient | undefined;
 }
 
 function createPrismaClient() {
   // Récupérer DATABASE_URL depuis l'environnement
-  const dbUrl = process.env.DATABASE_URL
-  
+  const dbUrl = process.env.DATABASE_URL;
+
   if (!dbUrl) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    throw new Error("DATABASE_URL environment variable is not set");
   }
-  
-  // Détecter si on utilise PostgreSQL (production) ou SQLite (développement)
-  const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://')
-  
+
+  // Détecter si on utilise PostgreSQL (par défaut) ou SQLite (legacy)
+  const isPostgreSQL =
+    dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://");
+
   if (isPostgreSQL) {
     // PostgreSQL : utiliser l'adaptateur pg (requis avec Prisma 7.0.1+)
-    const { PrismaPg } = require('@prisma/adapter-pg')
-    const { Pool } = require('pg')
-    
+    const { PrismaPg } = require("@prisma/adapter-pg");
+    const { Pool } = require("pg");
+
     const pool = new Pool({
       connectionString: dbUrl,
-    })
-    
-    const adapter = new PrismaPg(pool)
-    
+    });
+
+    const adapter = new PrismaPg(pool);
+
     return new PrismaClient({
       adapter,
-      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-    })
+      log:
+        process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
   } else {
-    // SQLite : utiliser l'adaptateur better-sqlite3 (uniquement en développement local)
+    // SQLite : utiliser l'adaptateur better-sqlite3 (legacy, non recommandé)
+    // Note: PostgreSQL est maintenant utilisé par défaut
     // Import dynamique pour éviter les erreurs en production
-    const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3')
-    
+    const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+
     // Extraire le chemin du fichier (enlever le préfixe "file:")
-    let databasePath = dbUrl.replace(/^file:/, '')
-    
+    let databasePath = dbUrl.replace(/^file:/, "");
+
     // Si c'est un chemin relatif, utiliser le chemin depuis la racine du projet
-    if (databasePath.startsWith('./')) {
-      databasePath = databasePath.substring(2) // Enlever "./"
+    if (databasePath.startsWith("./")) {
+      databasePath = databasePath.substring(2); // Enlever "./"
     }
-    
+
     try {
       // L'adaptateur PrismaBetterSqlite3 attend un objet avec une propriété 'url'
       const adapter = new PrismaBetterSqlite3({
-        url: databasePath
-      })
-      
+        url: databasePath,
+      });
+
       return new PrismaClient({
         adapter,
-        log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-      })
+        log:
+          process.env.NODE_ENV === "development"
+            ? ["error", "warn"]
+            : ["error"],
+      });
     } catch (error) {
-      console.error('Erreur lors de la création du client Prisma:', error)
-      console.error('Database path attempted:', databasePath)
-      console.error('DATABASE_URL from env:', process.env.DATABASE_URL)
-      console.error('dbUrl used:', dbUrl)
-      throw error
+      console.error("Erreur lors de la création du client Prisma:", error);
+      console.error("Database path attempted:", databasePath);
+      console.error("DATABASE_URL from env:", process.env.DATABASE_URL);
+      console.error("dbUrl used:", dbUrl);
+      throw error;
     }
   }
 }
 
-export const prisma = globalThis.prisma ?? createPrismaClient()
+export const prisma = globalThis.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prisma = prisma
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prisma = prisma;
 }
-

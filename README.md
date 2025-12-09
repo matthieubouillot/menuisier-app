@@ -18,6 +18,7 @@ L'application est **100% flexible** : vous pouvez créer n'importe quel type de 
 ## ✨ Fonctionnalités principales
 
 ### 📄 Gestion des Devis & Factures
+
 - **Création de devis professionnels** : Interface intuitive pour créer des devis conformes à la législation française
 - **Calculs automatiques** : Totaux HT/TTC, TVA, calculs de marge intégrés
 - **PDF professionnels** : Génération automatique de PDF prêts à envoyer à vos clients
@@ -27,6 +28,7 @@ L'application est **100% flexible** : vous pouvez créer n'importe quel type de 
 - **Accès client sécurisé** : Partagez vos devis/factures via un lien sécurisé avec token
 
 ### 🧮 Calculateur de Matériaux & Chiffrage
+
 - **Catalogue de matériaux personnalisable** : Gérez votre propre base de données de matériaux avec prix unitaires
 - **Catégories flexibles** : Bois, quincaillerie, fournitures, finitions, et catégories personnalisées
 - **Unités de mesure variées** : m², m, m³, kg, unité, lot, forfait, paire, pièce, boîte, rouleau, panneau, etc.
@@ -36,22 +38,26 @@ L'application est **100% flexible** : vous pouvez créer n'importe quel type de 
 - **Adaptable à tous les projets** : Cuisines, escaliers, fenêtres, mobilier, agencement, sur-mesure, etc.
 
 ### 👥 Gestion Clients & Projets
+
 - **Base de données clients** : Centralisez toutes les informations de vos clients
 - **Types de clients** : Gestion des particuliers et professionnels (avec SIRET)
 - **Projets associés** : Liez vos devis et factures à vos projets
 - **Historique complet** : Consultez tous les documents liés à un client ou projet
 
 ### 📅 Calendrier & Planning
+
 - **Gestion des chantiers** : Planifiez vos interventions et rendez-vous
 - **Association aux projets** : Liez vos événements à vos projets existants
 - **Vue d'ensemble** : Visualisez votre planning en un coup d'œil
 
 ### 📊 Tableau de Bord
+
 - **Statistiques financières** : Suivez votre chiffre d'affaires et vos factures
 - **Vue d'ensemble** : Derniers devis, factures, projets en cours
 - **Indicateurs clés** : Devis signés, factures payées, etc.
 
 ### ⚙️ Paramètres & Configuration
+
 - **Informations légales** : Configurez une fois vos informations (SIRET, adresse, TVA, etc.)
 - **Conditions de paiement** : Définissez vos conditions par défaut
 - **Mentions légales** : Personnalisez vos mentions légales
@@ -61,8 +67,8 @@ L'application est **100% flexible** : vous pouvez créer n'importe quel type de 
 
 - **Next.js 16.0.4** - Framework React avec App Router et Turbopack
 - **TypeScript** - Typage statique pour une meilleure maintenabilité
-- **Prisma 7.0.1** - ORM moderne avec adaptateurs PostgreSQL et SQLite
-- **PostgreSQL** - Base de données de production (Render)
+- **Prisma 7.0.1** - ORM moderne avec adaptateur PostgreSQL
+- **PostgreSQL** - Base de données (production et développement)
 - **NextAuth 5.0** - Authentification sécurisée (credentials, OAuth Google/GitHub)
 - **React 19** - Bibliothèque UI moderne
 - **Tailwind CSS 4.0** - Framework CSS utilitaire
@@ -73,7 +79,7 @@ L'application est **100% flexible** : vous pouvez créer n'importe quel type de 
 
 - **Node.js** 18+ (recommandé : 20+)
 - **npm** ou **yarn**
-- **PostgreSQL** (pour la production) ou **SQLite** (pour le développement)
+- **PostgreSQL** 12+ (pour la production et le développement)
 
 ## 🔧 Installation
 
@@ -90,15 +96,33 @@ cd menuisier-app
 npm install
 ```
 
-### 3. Configurer les variables d'environnement
+### 3. Créer la base de données PostgreSQL
+
+Créez une base de données PostgreSQL pour le développement :
+
+```bash
+# Se connecter à PostgreSQL
+psql -U postgres
+
+# Créer la base de données
+CREATE DATABASE menuisier_db;
+
+# Créer un utilisateur (optionnel, vous pouvez utiliser postgres)
+CREATE USER menuisier_user WITH PASSWORD 'votre_mot_de_passe';
+GRANT ALL PRIVILEGES ON DATABASE menuisier_db TO menuisier_user;
+
+# Quitter psql
+\q
+```
+
+### 4. Configurer les variables d'environnement
 
 Créez un fichier `.env` à la racine du projet :
 
 ```env
-# Base de données
+# Base de données PostgreSQL
+# Remplacez user, password et menuisier_db par vos identifiants
 DATABASE_URL="postgresql://user:password@localhost:5432/menuisier_db"
-# ou pour SQLite en développement :
-# DATABASE_URL="file:./dev.db"
 
 # NextAuth
 NEXTAUTH_SECRET="votre-secret-super-securise-genere-aleatoirement"
@@ -111,13 +135,13 @@ GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 ```
 
-### 4. Générer le client Prisma
+### 5. Générer le client Prisma
 
 ```bash
 npm run db:generate
 ```
 
-### 5. Lancer les migrations
+### 6. Lancer les migrations
 
 ```bash
 # Pour le développement
@@ -127,7 +151,7 @@ npm run db:migrate
 npm run db:deploy
 ```
 
-### 6. Démarrer l'application
+### 7. Démarrer l'application
 
 ```bash
 # Mode développement
@@ -250,6 +274,7 @@ L'application utilise **NextAuth 5.0** avec :
 L'application garantit la conformité avec la législation française pour les devis et factures :
 
 ### Devis
+
 - ✅ Numérotation séquentielle
 - ✅ Date de validité obligatoire
 - ✅ Date de début des travaux obligatoire
@@ -259,6 +284,7 @@ L'application garantit la conformité avec la législation française pour les d
 - ✅ TVA conforme (avec option art. 293 B du CGI)
 
 ### Factures
+
 - ✅ Numérotation séquentielle
 - ✅ SIRET obligatoire
 - ✅ Adresse complète obligatoire
@@ -343,4 +369,4 @@ Pour toute question, problème ou suggestion d'amélioration, n'hésitez pas à 
 
 **Développé avec ❤️ pour les menuisiers et artisans du bois**
 
-*Gagnez 5 heures par semaine sur l'administration et concentrez-vous sur votre cœur de métier.*
+_Gagnez 5 heures par semaine sur l'administration et concentrez-vous sur votre cœur de métier._
