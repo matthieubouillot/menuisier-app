@@ -23,24 +23,6 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  // Vérifier si c'est la première connexion (pas de clients, devis, factures, matériaux)
-  const [hasClients, hasDevis, hasFactures, hasMaterials] = await Promise.all([
-    prisma.client.count({ where: { userId } }),
-    prisma.devis.count({ where: { userId } }),
-    prisma.facture.count({ where: { userId } }),
-    prisma.material.count({ where: { userId } }),
-  ]);
-
-  // Si aucune donnée n'existe, rediriger vers le tutoriel
-  if (
-    hasClients === 0 &&
-    hasDevis === 0 &&
-    hasFactures === 0 &&
-    hasMaterials === 0
-  ) {
-    redirect("/parametres/tutoriel");
-  }
-
   // Récupérer les statistiques
   const [
     totalDevis,
