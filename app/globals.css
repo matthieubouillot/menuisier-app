@@ -48,6 +48,9 @@
 
   * {
     border-color: hsl(var(--border));
+    /* Supprimer --tw-border-style */
+    --tw-border-style: none !important;
+    border-style: solid;
     /* Empêcher l'overscroll (rebond jaune) sur mobile */
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
@@ -74,9 +77,21 @@
 
   /* Forcer le fond blanc sur tous les éléments racine */
   #__next,
-  [data-nextjs-scroll-focus-boundary] {
-    background-color: #ffffff;
+  [data-nextjs-scroll-focus-boundary],
+  main,
+  [role="main"] {
+    background-color: #ffffff !important;
     min-height: 100vh;
+  }
+
+  /* Forcer le fond blanc sur tous les conteneurs et cards */
+  .container,
+  [class*="container"],
+  [class*="bg-background"],
+  [class*="bg-card"],
+  /* Forcer blanc sur les cartes clients */
+  div[class*="rounded-2xl"][class*="border"][class*="p-4"] {
+    background-color: #ffffff !important;
   }
 
   /* Masquer les barres de scroll jaunes/fluo */
