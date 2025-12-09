@@ -819,10 +819,14 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Error seeding demo data:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack");
     return NextResponse.json(
       {
         error: "Erreur lors de la création des données de démonstration",
         details: error instanceof Error ? error.message : String(error),
+        ...(process.env.NODE_ENV === "development" && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
       { status: 500 }
     );

@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
-import { PWAInstallPrompt } from "@/components/pwa/pwa-install-prompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,8 +34,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
-      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   },
@@ -62,7 +59,6 @@ export default function RootLayout({
         <Providers>
           {children}
           <RegisterServiceWorker />
-          <PWAInstallPrompt />
         </Providers>
       </body>
     </html>
