@@ -421,13 +421,6 @@ const FacturePDFDocument = ({ facture }: { facture: FactureData }) => (
         )}
       </View>
 
-
-      {facture.description && (
-        <View style={{ marginBottom: 15 }}>
-          <Text style={{ fontSize: 9, marginBottom: 5 }}>{facture.description}</Text>
-        </View>
-      )}
-
       <View style={{ marginBottom: 15 }}>
         <View style={styles.table}>
           <View style={styles.tableHeader}>

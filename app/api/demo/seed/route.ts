@@ -1,29 +1,61 @@
-import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { generateClientToken } from "@/lib/utils"
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { generateClientToken } from "@/lib/utils";
 
 export async function POST() {
   try {
-    const session = await auth()
+    const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const userId = session.user.id
+    const userId = session.user.id;
 
-    // Supprimer toutes les anciennes données de démo
-    console.log("Suppression des données existantes...")
-    await prisma.calendarEvent.deleteMany({ where: { userId } })
-    await prisma.materialCalculation.deleteMany({ where: { userId } })
-    await prisma.material.deleteMany({ where: { userId } })
-    await prisma.factureItem.deleteMany({ where: { facture: { userId } } })
-    await prisma.facture.deleteMany({ where: { userId } })
-    await prisma.devisItem.deleteMany({ where: { devis: { userId } } })
-    await prisma.devis.deleteMany({ where: { userId } })
-    await prisma.project.deleteMany({ where: { userId } })
-    await prisma.client.deleteMany({ where: { userId } })
-    console.log("Données supprimées avec succès")
+    // Supprimer uniquement les anciennes données de démo
+    console.log("Suppression des anciennes données de démo...");
+    const oldDemoData = await prisma.demoData.findMany({ where: { userId } });
+
+    // Supprimer les entités liées aux données de démo
+    for (const demo of oldDemoData) {
+      switch (demo.entityType) {
+        case "client":
+          await prisma.client.deleteMany({ where: { id: demo.entityId } });
+          break;
+        case "project":
+          await prisma.project.deleteMany({ where: { id: demo.entityId } });
+          break;
+        case "devis":
+          await prisma.devisItem.deleteMany({
+            where: { devisId: demo.entityId },
+          });
+          await prisma.devis.deleteMany({ where: { id: demo.entityId } });
+          break;
+        case "facture":
+          await prisma.factureItem.deleteMany({
+            where: { factureId: demo.entityId },
+          });
+          await prisma.facture.deleteMany({ where: { id: demo.entityId } });
+          break;
+        case "material":
+          await prisma.material.deleteMany({ where: { id: demo.entityId } });
+          break;
+        case "calculation":
+          await prisma.materialCalculation.deleteMany({
+            where: { id: demo.entityId },
+          });
+          break;
+        case "event":
+          await prisma.calendarEvent.deleteMany({
+            where: { id: demo.entityId },
+          });
+          break;
+      }
+    }
+
+    // Supprimer les enregistrements DemoData
+    await prisma.demoData.deleteMany({ where: { userId } });
+    console.log("Anciennes données de démo supprimées avec succès");
 
     // 1. Créer des clients variés (particuliers et professionnels)
     const clients = await Promise.all([
@@ -89,7 +121,7 @@ export async function POST() {
           userId,
         },
       }),
-    ])
+    ]);
 
     // 2. Créer des matériaux dans le catalogue
     const materials = await Promise.all([
@@ -189,14 +221,15 @@ export async function POST() {
           userId,
         },
       }),
-    ])
+    ]);
 
     // 3. Créer des projets
     const projects = await Promise.all([
       prisma.project.create({
         data: {
           name: "Cuisine moderne avec îlot",
-          description: "Rénovation complète d'une cuisine avec îlot central, électroménager intégré et plan de travail granit",
+          description:
+            "Rénovation complète d'une cuisine avec îlot central, électroménager intégré et plan de travail granit",
           type: "cuisine",
           status: "en_cours",
           startDate: new Date("2025-01-15"),
@@ -209,7 +242,8 @@ export async function POST() {
       prisma.project.create({
         data: {
           name: "Armoire sur mesure chêne",
-          description: "Armoire 3 portes avec miroir intégré, finition chêne clair",
+          description:
+            "Armoire 3 portes avec miroir intégré, finition chêne clair",
           type: "armoire",
           status: "termine",
           startDate: new Date("2024-11-01"),
@@ -222,7 +256,8 @@ export async function POST() {
       prisma.project.create({
         data: {
           name: "Table à manger 8 personnes",
-          description: "Table en chêne massif avec rallonges, style rustique moderne",
+          description:
+            "Table en chêne massif avec rallonges, style rustique moderne",
           type: "table",
           status: "en_cours",
           startDate: new Date("2025-02-10"),
@@ -232,32 +267,107 @@ export async function POST() {
           clientId: clients[3].id,
         },
       }),
-    ])
+    ]);
 
     // 4. Créer des calculs de matériaux (chiffrages) AVANT les devis
     // Ces calculs seront utilisés pour préremplir les devis
     const calculation1Materials = [
-      { name: "Plan de travail granit", quantity: 5.5, unit: "m²", unitPrice: 280, total: 1540 },
-      { name: "Caisson de cuisine standard", quantity: 8, unit: "unité", unitPrice: 160, total: 1280 },
-      { name: "Porte de meuble standard", quantity: 8, unit: "unité", unitPrice: 95, total: 760 },
-      { name: "Charnière amortie", quantity: 16, unit: "unité", unitPrice: 4.5, total: 72 },
-      { name: "Poignée inox brossé", quantity: 16, unit: "unité", unitPrice: 6, total: 96 },
-    ]
-    const calculation1Total = calculation1Materials.reduce((sum, m) => sum + m.total, 0)
+      {
+        name: "Plan de travail granit",
+        quantity: 5.5,
+        unit: "m²",
+        unitPrice: 280,
+        total: 1540,
+      },
+      {
+        name: "Caisson de cuisine standard",
+        quantity: 8,
+        unit: "unité",
+        unitPrice: 160,
+        total: 1280,
+      },
+      {
+        name: "Porte de meuble standard",
+        quantity: 8,
+        unit: "unité",
+        unitPrice: 95,
+        total: 760,
+      },
+      {
+        name: "Charnière amortie",
+        quantity: 16,
+        unit: "unité",
+        unitPrice: 4.5,
+        total: 72,
+      },
+      {
+        name: "Poignée inox brossé",
+        quantity: 16,
+        unit: "unité",
+        unitPrice: 6,
+        total: 96,
+      },
+    ];
+    const calculation1Total = calculation1Materials.reduce(
+      (sum, m) => sum + m.total,
+      0
+    );
 
     const calculation2Materials = [
-      { name: "Panneau MDF 18mm", quantity: 9.5, unit: "m²", unitPrice: 32, total: 304 },
-      { name: "Porte de meuble standard", quantity: 3, unit: "unité", unitPrice: 95, total: 285 },
-      { name: "Charnière amortie", quantity: 6, unit: "unité", unitPrice: 4.5, total: 27 },
-      { name: "Poignée inox brossé", quantity: 3, unit: "unité", unitPrice: 6, total: 18 },
-    ]
-    const calculation2Total = calculation2Materials.reduce((sum, m) => sum + m.total, 0)
+      {
+        name: "Panneau MDF 18mm",
+        quantity: 9.5,
+        unit: "m²",
+        unitPrice: 32,
+        total: 304,
+      },
+      {
+        name: "Porte de meuble standard",
+        quantity: 3,
+        unit: "unité",
+        unitPrice: 95,
+        total: 285,
+      },
+      {
+        name: "Charnière amortie",
+        quantity: 6,
+        unit: "unité",
+        unitPrice: 4.5,
+        total: 27,
+      },
+      {
+        name: "Poignée inox brossé",
+        quantity: 3,
+        unit: "unité",
+        unitPrice: 6,
+        total: 18,
+      },
+    ];
+    const calculation2Total = calculation2Materials.reduce(
+      (sum, m) => sum + m.total,
+      0
+    );
 
     const calculation3Materials = [
-      { name: "Plateau chêne massif", quantity: 2.86, unit: "m²", unitPrice: 135, total: 386.1 },
-      { name: "Pieds de table chêne", quantity: 4, unit: "unité", unitPrice: 55, total: 220 },
-    ]
-    const calculation3Total = calculation3Materials.reduce((sum, m) => sum + m.total, 0)
+      {
+        name: "Plateau chêne massif",
+        quantity: 2.86,
+        unit: "m²",
+        unitPrice: 135,
+        total: 386.1,
+      },
+      {
+        name: "Pieds de table chêne",
+        quantity: 4,
+        unit: "unité",
+        unitPrice: 55,
+        total: 220,
+      },
+    ];
+    const calculation3Total = calculation3Materials.reduce(
+      (sum, m) => sum + m.total,
+      0
+    );
 
     const calculations = await Promise.all([
       prisma.materialCalculation.create({
@@ -305,14 +415,15 @@ export async function POST() {
           clientId: clients[3].id,
         },
       }),
-    ])
+    ]);
 
     // 5. Créer des devis avec les MÊMES données que les calculs (pour cohérence)
     const devisData = [
       {
         number: "DEV-2025-001",
         title: "Devis cuisine moderne avec îlot",
-        description: "Rénovation complète cuisine avec îlot central et électroménager",
+        description:
+          "Rénovation complète cuisine avec îlot central et électroménager",
         status: "signe",
         totalHT: 26666.67,
         totalTTC: 32000,
@@ -320,23 +431,75 @@ export async function POST() {
         projectId: projects[0].id,
         validUntil: new Date("2025-02-15"),
         advancePayment: 8000,
-        paymentTerms: "Acompte de 8000€ à la commande. Solde à la livraison, délai de paiement : 30 jours.",
+        paymentTerms:
+          "Acompte de 8000€ à la commande. Solde à la livraison, délai de paiement : 30 jours.",
         isVatApplicable: true,
         workStartDate: new Date("2025-02-01"),
         workDuration: "4 semaines",
         travelExpenses: 150,
-        insuranceInfo: "Assurance professionnelle Allianz - Police n° AP-2024-789456 - Couverture : 500 000€ - Validité jusqu'au 31/12/2025",
-        afterSalesService: "Garantie de 2 ans sur tous les travaux et matériaux. Intervention gratuite sous 48h en cas de problème. Service après-vente disponible par téléphone ou email.",
-        cgvReference: "CGV-2024-v2.1 - Disponibles sur demande ou sur www.menuisier-pro.fr/cgv",
+        insuranceInfo:
+          "Assurance professionnelle Allianz - Police n° AP-2024-789456 - Couverture : 500 000€ - Validité jusqu'au 31/12/2025",
+        afterSalesService:
+          "Garantie de 2 ans sur tous les travaux et matériaux. Intervention gratuite sous 48h en cas de problème. Service après-vente disponible par téléphone ou email.",
+        cgvReference:
+          "CGV-2024-v2.1 - Disponibles sur demande ou sur www.menuisier-pro.fr/cgv",
         items: [
-          { description: "Plan de travail granit", quantity: 5.5, unit: "m²", unitPrice: 280, total: 1540 },
-          { description: "Caisson de cuisine standard", quantity: 8, unit: "unité", unitPrice: 160, total: 1280 },
-          { description: "Porte de meuble standard", quantity: 8, unit: "unité", unitPrice: 95, total: 760 },
-          { description: "Charnière amortie", quantity: 16, unit: "unité", unitPrice: 4.5, total: 72 },
-          { description: "Poignée inox brossé", quantity: 16, unit: "unité", unitPrice: 6, total: 96 },
-          { description: "Îlot central avec rangements", quantity: 1, unit: "unité", unitPrice: 3200, total: 3200 },
-          { description: "Pose et installation", quantity: 1, unit: "forfait", unitPrice: 1800, total: 1800 },
-          { description: "Électroménager intégré (four, lave-vaisselle, hotte)", quantity: 1, unit: "lot", unitPrice: 14500, total: 14500 },
+          {
+            description: "Plan de travail granit",
+            quantity: 5.5,
+            unit: "m²",
+            unitPrice: 280,
+            total: 1540,
+          },
+          {
+            description: "Caisson de cuisine standard",
+            quantity: 8,
+            unit: "unité",
+            unitPrice: 160,
+            total: 1280,
+          },
+          {
+            description: "Porte de meuble standard",
+            quantity: 8,
+            unit: "unité",
+            unitPrice: 95,
+            total: 760,
+          },
+          {
+            description: "Charnière amortie",
+            quantity: 16,
+            unit: "unité",
+            unitPrice: 4.5,
+            total: 72,
+          },
+          {
+            description: "Poignée inox brossé",
+            quantity: 16,
+            unit: "unité",
+            unitPrice: 6,
+            total: 96,
+          },
+          {
+            description: "Îlot central avec rangements",
+            quantity: 1,
+            unit: "unité",
+            unitPrice: 3200,
+            total: 3200,
+          },
+          {
+            description: "Pose et installation",
+            quantity: 1,
+            unit: "forfait",
+            unitPrice: 1800,
+            total: 1800,
+          },
+          {
+            description: "Électroménager intégré (four, lave-vaisselle, hotte)",
+            quantity: 1,
+            unit: "lot",
+            unitPrice: 14500,
+            total: 14500,
+          },
         ],
       },
       {
@@ -353,13 +516,55 @@ export async function POST() {
         paymentTerms: "Paiement à la livraison, délai de paiement : 30 jours.",
         isVatApplicable: true,
         items: [
-          { description: "Panneau MDF 18mm", quantity: 9.5, unit: "m²", unitPrice: 32, total: 304 },
-          { description: "Porte de meuble standard", quantity: 3, unit: "unité", unitPrice: 95, total: 285 },
-          { description: "Charnière amortie", quantity: 6, unit: "unité", unitPrice: 4.5, total: 27 },
-          { description: "Poignée inox brossé", quantity: 3, unit: "unité", unitPrice: 6, total: 18 },
-          { description: "Structure armoire MDF 18mm", quantity: 1, unit: "unité", unitPrice: 1400, total: 1400 },
-          { description: "Portes 3 battants avec miroir", quantity: 3, unit: "unité", unitPrice: 420, total: 1260 },
-          { description: "Pose et finition", quantity: 1, unit: "forfait", unitPrice: 1360, total: 1360 },
+          {
+            description: "Panneau MDF 18mm",
+            quantity: 9.5,
+            unit: "m²",
+            unitPrice: 32,
+            total: 304,
+          },
+          {
+            description: "Porte de meuble standard",
+            quantity: 3,
+            unit: "unité",
+            unitPrice: 95,
+            total: 285,
+          },
+          {
+            description: "Charnière amortie",
+            quantity: 6,
+            unit: "unité",
+            unitPrice: 4.5,
+            total: 27,
+          },
+          {
+            description: "Poignée inox brossé",
+            quantity: 3,
+            unit: "unité",
+            unitPrice: 6,
+            total: 18,
+          },
+          {
+            description: "Structure armoire MDF 18mm",
+            quantity: 1,
+            unit: "unité",
+            unitPrice: 1400,
+            total: 1400,
+          },
+          {
+            description: "Portes 3 battants avec miroir",
+            quantity: 3,
+            unit: "unité",
+            unitPrice: 420,
+            total: 1260,
+          },
+          {
+            description: "Pose et finition",
+            quantity: 1,
+            unit: "forfait",
+            unitPrice: 1360,
+            total: 1360,
+          },
         ],
       },
       {
@@ -376,18 +581,48 @@ export async function POST() {
         paymentTerms: "Paiement à la livraison, délai de paiement : 30 jours.",
         isVatApplicable: true,
         items: [
-          { description: "Plateau chêne massif", quantity: 2.86, unit: "m²", unitPrice: 135, total: 386.1 },
-          { description: "Pieds de table chêne", quantity: 4, unit: "unité", unitPrice: 55, total: 220 },
-          { description: "Système de rallonges", quantity: 1, unit: "unité", unitPrice: 380, total: 380 },
-          { description: "Finition huile naturelle", quantity: 1, unit: "forfait", unitPrice: 220, total: 220 },
-          { description: "Fabrication et finition", quantity: 1, unit: "forfait", unitPrice: 2293.9, total: 2293.9 },
+          {
+            description: "Plateau chêne massif",
+            quantity: 2.86,
+            unit: "m²",
+            unitPrice: 135,
+            total: 386.1,
+          },
+          {
+            description: "Pieds de table chêne",
+            quantity: 4,
+            unit: "unité",
+            unitPrice: 55,
+            total: 220,
+          },
+          {
+            description: "Système de rallonges",
+            quantity: 1,
+            unit: "unité",
+            unitPrice: 380,
+            total: 380,
+          },
+          {
+            description: "Finition huile naturelle",
+            quantity: 1,
+            unit: "forfait",
+            unitPrice: 220,
+            total: 220,
+          },
+          {
+            description: "Fabrication et finition",
+            quantity: 1,
+            unit: "forfait",
+            unitPrice: 2293.9,
+            total: 2293.9,
+          },
         ],
       },
-    ]
+    ];
 
     const devis = await Promise.all(
       devisData.map(async (devis) => {
-        const clientToken = generateClientToken()
+        const clientToken = generateClientToken();
         const created = await prisma.devis.create({
           data: {
             number: devis.number,
@@ -415,10 +650,10 @@ export async function POST() {
               create: devis.items,
             },
           },
-        })
-        return created
+        });
+        return created;
       })
-    )
+    );
 
     // 6. Créer des factures (converties depuis devis acceptés)
     const facturesData = [
@@ -432,8 +667,10 @@ export async function POST() {
         paidAmount: 32000,
         paidAt: new Date("2025-01-20"),
         dueDate: new Date("2025-02-20"),
-        paymentTerms: "Paiement par virement bancaire – échéance à 30 jours. Acompte de 8000€ déjà reçu.",
-        paymentMethod: "Virement bancaire (IBAN FR76 1234 5678 9012 3456 7890 123) ou chèque à l'ordre de Menuisier Pro.",
+        paymentTerms:
+          "Paiement par virement bancaire – échéance à 30 jours. Acompte de 8000€ déjà reçu.",
+        paymentMethod:
+          "Virement bancaire (IBAN FR76 1234 5678 9012 3456 7890 123) ou chèque à l'ordre de Menuisier Pro.",
         isVatApplicable: true,
         clientId: clients[0].id,
         projectId: projects[0].id,
@@ -449,19 +686,21 @@ export async function POST() {
         totalTTC: 3500,
         paidAmount: 0,
         dueDate: new Date("2025-04-30"),
-        paymentTerms: "Paiement à réception par virement ou chèque – délai de paiement : 30 jours. Pénalités de retard applicables au-delà de cette date.",
-        paymentMethod: "Virement bancaire (IBAN FR76 1234 5678 9012 3456 7890 123) ou chèque à l'ordre de Menuisier Pro.",
+        paymentTerms:
+          "Paiement à réception par virement ou chèque – délai de paiement : 30 jours. Pénalités de retard applicables au-delà de cette date.",
+        paymentMethod:
+          "Virement bancaire (IBAN FR76 1234 5678 9012 3456 7890 123) ou chèque à l'ordre de Menuisier Pro.",
         isVatApplicable: true,
         clientId: clients[3].id,
         projectId: projects[2].id,
         devisId: devis[2].id,
         items: devisData[2].items,
       },
-    ]
+    ];
 
     const factures = await Promise.all(
       facturesData.map(async (facture) => {
-        const clientToken = generateClientToken()
+        const clientToken = generateClientToken();
         const created = await prisma.facture.create({
           data: {
             number: facture.number,
@@ -486,17 +725,18 @@ export async function POST() {
               create: facture.items,
             },
           },
-        })
-        return created
+        });
+        return created;
       })
-    )
+    );
 
     // 7. Créer des événements de calendrier
     const events = await Promise.all([
       prisma.calendarEvent.create({
         data: {
           title: "Pose cuisine - Thomas Dubois",
-          description: "Installation des meubles bas et hauts, pose du plan de travail granit",
+          description:
+            "Installation des meubles bas et hauts, pose du plan de travail granit",
           startDate: new Date("2025-03-15T09:00:00"),
           endDate: new Date("2025-03-15T17:00:00"),
           type: "chantier",
@@ -511,7 +751,7 @@ export async function POST() {
           description: "Prise de mesures pour nouvelle commande d'armoires",
           startDate: new Date("2025-01-20T14:00:00"),
           endDate: new Date("2025-01-20T15:30:00"),
-          type: "rendez_vous",
+          type: "rendez vous",
           location: "15 Boulevard Haussmann, Paris",
           userId,
           projectId: projects[1].id,
@@ -520,7 +760,8 @@ export async function POST() {
       prisma.calendarEvent.create({
         data: {
           title: "Finition table - Emma Petit",
-          description: "Application de la finition huile naturelle sur la table",
+          description:
+            "Application de la finition huile naturelle sur la table",
           startDate: new Date("2025-04-10T08:00:00"),
           endDate: new Date("2025-04-10T12:00:00"),
           type: "chantier",
@@ -529,7 +770,39 @@ export async function POST() {
           projectId: projects[2].id,
         },
       }),
-    ])
+    ]);
+
+    // Enregistrer tous les IDs dans DemoData pour pouvoir les supprimer plus tard
+    const demoDataEntries = [
+      ...clients.map((c) => ({ entityType: "client", entityId: c.id, userId })),
+      ...materials.map((m) => ({
+        entityType: "material",
+        entityId: m.id,
+        userId,
+      })),
+      ...projects.map((p) => ({
+        entityType: "project",
+        entityId: p.id,
+        userId,
+      })),
+      ...devis.map((d) => ({ entityType: "devis", entityId: d.id, userId })),
+      ...factures.map((f) => ({
+        entityType: "facture",
+        entityId: f.id,
+        userId,
+      })),
+      ...events.map((e) => ({ entityType: "event", entityId: e.id, userId })),
+      ...calculations.map((c) => ({
+        entityType: "calculation",
+        entityId: c.id,
+        userId,
+      })),
+    ];
+
+    await prisma.demoData.createMany({
+      data: demoDataEntries,
+      skipDuplicates: true,
+    });
 
     return NextResponse.json({
       success: true,
@@ -543,15 +816,15 @@ export async function POST() {
         events: events.length,
         calculations: calculations.length,
       },
-    })
+    });
   } catch (error) {
-    console.error("Error seeding demo data:", error)
+    console.error("Error seeding demo data:", error);
     return NextResponse.json(
       {
         error: "Erreur lors de la création des données de démonstration",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
-    )
+    );
   }
 }

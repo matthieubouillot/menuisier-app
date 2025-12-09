@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Edit2, Trash2 } from "lucide-react"
 
 import { Navbar } from "@/components/layout/navbar"
+import { MobileBackButton } from "@/components/layout/mobile-back-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -142,6 +143,7 @@ export default function CatalogueMateriauxPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
+        <MobileBackButton href="/atelier" label="Retour à l'atelier" />
         <div>
           <p className="text-sm uppercase tracking-widest text-muted-foreground mb-2">
             Catalogue personnel

@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
-type ClientType = "particulier" | "professionnel"
+type ClientType = "particulier" | "professionnel";
 
 type Client = {
-  id: string
-  firstName: string
-  lastName: string
-  companyName?: string | null
-  siret?: string | null
-  type: ClientType
-  email?: string | null
-  phone?: string | null
-  address?: string | null
-  city?: string | null
-  postalCode?: string | null
-  notes?: string | null
-}
+  id: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string | null;
+  siret?: string | null;
+  type: ClientType;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  notes?: string | null;
+};
 
 const emptyClient = {
   firstName: "",
@@ -37,128 +37,183 @@ const emptyClient = {
   city: "",
   postalCode: "",
   notes: "",
-}
+};
 
 const filterOptions: { label: string; value: "all" | ClientType }[] = [
   { label: "Tous", value: "all" },
   { label: "Professionnels", value: "professionnel" },
   { label: "Particuliers", value: "particulier" },
-]
+];
 
 export function ClientsManager() {
-  const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState(emptyClient)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [filter, setFilter] = useState<"all" | ClientType>("all")
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyClient);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filter, setFilter] = useState<"all" | ClientType>("all");
 
   useEffect(() => {
-    fetchClients()
-  }, [])
+    fetchClients();
+  }, []);
 
   const fetchClients = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/clients")
+      const res = await fetch("/api/clients");
       if (!res.ok) {
-        throw new Error("Impossible de récupérer les clients.")
+        throw new Error("Impossible de récupérer les clients.");
       }
-      const data = await res.json()
-      setClients(data)
+      const data = await res.json();
+      setClients(data);
     } catch (err: any) {
-      setError(err.message || "Erreur inconnue.")
+      setError(err.message || "Erreur inconnue.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filteredClients = useMemo(() => {
-    if (filter === "all") return clients
-    return clients.filter((client) => client.type === filter)
-  }, [clients, filter])
+    if (filter === "all") return clients;
+    return clients.filter((client) => client.type === filter);
+  }, [clients, filter]);
+
+  const handleEdit = (client: Client) => {
+    setForm({
+      firstName: client.firstName,
+      lastName: client.lastName,
+      companyName: client.companyName || "",
+      siret: client.siret || "",
+      type: client.type,
+      email: client.email || "",
+      phone: client.phone || "",
+      address: client.address || "",
+      city: client.city || "",
+      postalCode: client.postalCode || "",
+      notes: client.notes || "",
+    });
+    setEditingId(client.id);
+    setIsModalOpen(true);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMessage(null)
-    setError(null)
+    e.preventDefault();
+    setMessage(null);
+    setError(null);
 
     if (!form.firstName || !form.lastName) {
-      setError("Le prénom et le nom sont obligatoires.")
-      return
+      setError("Le prénom et le nom sont obligatoires.");
+      return;
     }
 
     if (form.type === "professionnel") {
       if (!form.companyName.trim()) {
-        setError("Le nom de l'entreprise est obligatoire pour un client professionnel.")
-        return
+        setError(
+          "Le nom de l'entreprise est obligatoire pour un client professionnel."
+        );
+        return;
       }
       if (!form.siret?.trim()) {
-        setError("Le numéro de SIRET est obligatoire pour un client professionnel.")
-        return
+        setError(
+          "Le numéro de SIRET est obligatoire pour un client professionnel."
+        );
+        return;
       }
     }
 
-    setCreating(true)
-    try {
-      const res = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      })
+    if (editingId) {
+      setUpdating(true);
+      try {
+        const res = await fetch(`/api/clients/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error || "Impossible d'ajouter ce client.")
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error || "Impossible de modifier ce client.");
+        }
+
+        const updatedClient = await res.json();
+        setClients((prev) =>
+          prev.map((c) => (c.id === editingId ? updatedClient : c))
+        );
+        setForm(emptyClient);
+        setEditingId(null);
+        setIsModalOpen(false);
+        setMessage("Client modifié avec succès.");
+      } catch (err: any) {
+        setError(err.message || "Erreur lors de la modification.");
+      } finally {
+        setUpdating(false);
       }
+    } else {
+      setCreating(true);
+      try {
+        const res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
 
-      const newClient = await res.json()
-      setClients((prev) => [...prev, newClient])
-      setForm(emptyClient)
-      setIsModalOpen(false)
-      setMessage("Client ajouté avec succès.")
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de l'ajout.")
-    } finally {
-      setCreating(false)
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error || "Impossible d'ajouter ce client.");
+        }
+
+        const newClient = await res.json();
+        setClients((prev) => [...prev, newClient]);
+        setForm(emptyClient);
+        setIsModalOpen(false);
+        setMessage("Client ajouté avec succès.");
+      } catch (err: any) {
+        setError(err.message || "Erreur lors de l'ajout.");
+      } finally {
+        setCreating(false);
+      }
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
-    const client = clients.find((c) => c.id === id)
-    if (!client) return
+    const client = clients.find((c) => c.id === id);
+    if (!client) return;
 
     const confirmed = window.confirm(
-      `Supprimer le client ${client.companyName ?? `${client.firstName} ${client.lastName}`} ?`
-    )
-    if (!confirmed) return
+      `Supprimer le client ${
+        client.companyName ?? `${client.firstName} ${client.lastName}`
+      } ?`
+    );
+    if (!confirmed) return;
 
-    setDeletingId(id)
-    setError(null)
-    setMessage(null)
+    setDeletingId(id);
+    setError(null);
+    setMessage(null);
 
     try {
       const res = await fetch(`/api/clients/${id}`, {
         method: "DELETE",
-      })
+      });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error || "Impossible de supprimer ce client.")
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || "Impossible de supprimer ce client.");
       }
 
-      setClients((prev) => prev.filter((client) => client.id !== id))
-      setMessage("Client supprimé.")
+      setClients((prev) => prev.filter((client) => client.id !== id));
+      setMessage("Client supprimé.");
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la suppression.")
+      setError(err.message || "Erreur lors de la suppression.");
     } finally {
-      setDeletingId(null)
+      setDeletingId(null);
     }
-  }
+  };
 
   const renderClientCard = (client: Client) => (
     <div
@@ -176,7 +231,9 @@ export function ClientsManager() {
         </p>
         <div className="text-sm text-muted-foreground space-y-1 mt-2">
           {client.type === "professionnel" && client.companyName && (
-            <p>Contact : {client.firstName} {client.lastName}</p>
+            <p>
+              Contact : {client.firstName} {client.lastName}
+            </p>
           )}
           {client.siret && <p>SIRET : {client.siret}</p>}
           {client.email && <p>Email : {client.email}</p>}
@@ -189,53 +246,68 @@ export function ClientsManager() {
           )}
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive"
-        onClick={() => handleDelete(client.id)}
-        disabled={deletingId === client.id}
-      >
-        {deletingId === client.id ? "Suppression..." : "Supprimer"}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={() => handleEdit(client)}>
+          Modifier
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive"
+          onClick={() => handleDelete(client.id)}
+          disabled={deletingId === client.id}
+        >
+          {deletingId === client.id ? "Suppression..." : "Supprimer"}
+        </Button>
+      </div>
     </div>
-  )
+  );
 
   const sections =
     filter === "all"
       ? (["professionnel", "particulier"] as ClientType[]).map((type) => ({
-          title: type === "professionnel" ? "Clients professionnels" : "Clients particuliers",
+          title:
+            type === "professionnel"
+              ? "Clients professionnels"
+              : "Clients particuliers",
           clients: clients.filter((client) => client.type === type),
         }))
       : [
           {
-            title: filter === "professionnel" ? "Clients professionnels" : "Clients particuliers",
+            title:
+              filter === "professionnel"
+                ? "Clients professionnels"
+                : "Clients particuliers",
             clients: filteredClients,
           },
-        ]
+        ];
 
   return (
     <div className="space-y-10">
       <section className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 justify-between">
-          <div className="inline-flex rounded-2xl border bg-card p-1">
+          <div className="flex border-b border-border">
             {filterOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => setFilter(option.value)}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-xl transition-colors",
+                  "px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px",
                   filter === option.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary border-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
                 )}
               >
                 {option.label}
               </button>
             ))}
           </div>
-          <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsModalOpen(true)}
+          >
             Créer un client
           </Button>
         </div>
@@ -244,16 +316,24 @@ export function ClientsManager() {
         {message && !error && <p className="text-sm text-primary">{message}</p>}
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Chargement des clients...</p>
+          <p className="text-sm text-muted-foreground">
+            Chargement des clients...
+          </p>
         ) : clients.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun client enregistré pour le moment.</p>
+          <p className="text-sm text-muted-foreground">
+            Aucun client enregistré pour le moment.
+          </p>
         ) : (
           <div className="space-y-6">
             {sections.map(({ title, clients }) =>
               clients.length === 0 ? null : (
                 <div key={title} className="space-y-3">
-                  <p className="text-sm font-semibold text-muted-foreground">{title}</p>
-                  <div className="space-y-3">{clients.map(renderClientCard)}</div>
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {title}
+                  </p>
+                  <div className="space-y-3">
+                    {clients.map(renderClientCard)}
+                  </div>
                 </div>
               )
             )}
@@ -266,17 +346,22 @@ export function ClientsManager() {
           <div className="w-full max-w-2xl rounded-3xl border bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <p className="text-lg font-semibold text-foreground">Créer un client</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {editingId ? "Modifier un client" : "Créer un client"}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Ajoutez rapidement un client professionnel ou particulier.
+                  {editingId
+                    ? "Modifiez les informations du client."
+                    : "Ajoutez rapidement un client professionnel ou particulier."}
                 </p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setIsModalOpen(false)
-                  setForm(emptyClient)
+                  setIsModalOpen(false);
+                  setForm(emptyClient);
+                  setEditingId(null);
                 }}
               >
                 Fermer
@@ -288,7 +373,9 @@ export function ClientsManager() {
                   <Label>Type de client *</Label>
                   <Select
                     value={form.type}
-                    onChange={(e) => setForm({ ...form, type: e.target.value as ClientType })}
+                    onChange={(e) =>
+                      setForm({ ...form, type: e.target.value as ClientType })
+                    }
                   >
                     <option value="particulier">Particulier</option>
                     <option value="professionnel">Professionnel</option>
@@ -300,7 +387,9 @@ export function ClientsManager() {
                       <Label>Nom de l'entreprise *</Label>
                       <Input
                         value={form.companyName}
-                        onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, companyName: e.target.value })
+                        }
                         required={form.type === "professionnel"}
                       />
                     </div>
@@ -308,7 +397,9 @@ export function ClientsManager() {
                       <Label>Numéro de SIRET *</Label>
                       <Input
                         value={form.siret || ""}
-                        onChange={(e) => setForm({ ...form, siret: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, siret: e.target.value })
+                        }
                         required={form.type === "professionnel"}
                       />
                       <p className="text-xs text-muted-foreground">
@@ -324,14 +415,18 @@ export function ClientsManager() {
                   <Label>Prénom *</Label>
                   <Input
                     value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, firstName: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Nom *</Label>
                   <Input
                     value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, lastName: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -342,14 +437,18 @@ export function ClientsManager() {
                   <Input
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Téléphone</Label>
                   <Input
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -358,7 +457,9 @@ export function ClientsManager() {
                 <Label>Adresse</Label>
                 <Input
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, address: e.target.value })
+                  }
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -373,7 +474,9 @@ export function ClientsManager() {
                   <Label>Code postal</Label>
                   <Input
                     value={form.postalCode}
-                    onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, postalCode: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -388,20 +491,28 @@ export function ClientsManager() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                {message && !error && <p className="text-sm text-primary">{message}</p>}
+                {message && !error && (
+                  <p className="text-sm text-primary">{message}</p>
+                )}
                 <div className="flex gap-2 ml-auto">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      setIsModalOpen(false)
-                      setForm(emptyClient)
+                      setIsModalOpen(false);
+                      setForm(emptyClient);
                     }}
                   >
                     Annuler
                   </Button>
-                  <Button type="submit" disabled={creating}>
-                    {creating ? "Ajout en cours..." : "Enregistrer le client"}
+                  <Button type="submit" disabled={creating || updating}>
+                    {updating
+                      ? "Modification..."
+                      : creating
+                      ? "Ajout en cours..."
+                      : editingId
+                      ? "Modifier le client"
+                      : "Enregistrer le client"}
                   </Button>
                 </div>
               </div>
@@ -410,6 +521,5 @@ export function ClientsManager() {
         </div>
       )}
     </div>
-  )
+  );
 }
-

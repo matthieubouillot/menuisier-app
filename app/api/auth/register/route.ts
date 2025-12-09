@@ -5,10 +5,10 @@ import bcrypt from "bcryptjs"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, password, name, companyName } = body
+    const { email, password, firstName, lastName } = body
 
     // Validation des champs requis
-    if (!email || !password || !name) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: "Tous les champs sont requis" },
         { status: 400 }
@@ -43,8 +43,7 @@ export async function POST(request: Request) {
       data: {
         email,
         password: hashedPassword,
-        name,
-        companyName: companyName || null,
+        name: `${firstName} ${lastName}`,
       },
     })
 

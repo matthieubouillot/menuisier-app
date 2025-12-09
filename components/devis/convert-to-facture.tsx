@@ -38,9 +38,9 @@ export function ConvertToFactureButton({ devisId }: { devisId: string }) {
   }
 
   return (
-    <Button onClick={handleConvert} disabled={loading}>
-      <Receipt className="mr-2 h-4 w-4" />
-      {loading ? "Conversion..." : "Convertir en facture"}
+    <Button onClick={handleConvert} disabled={loading} size="lg" className="w-full sm:w-auto">
+      <Receipt className="h-4 w-4 sm:mr-2 sm:h-5 sm:w-5" />
+      <span className="hidden sm:inline">{loading ? "Conversion..." : "Convertir en facture"}</span>
     </Button>
   )
 }

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
@@ -36,6 +36,7 @@ model User {
   templates    Template[]
   materials    Material[]
   calculations MaterialCalculation[]
+  demoData     DemoData[]
 }
 
 model Client {
@@ -268,7 +269,7 @@ model CalendarEvent {
   description String?
   startDate   DateTime
   endDate     DateTime?
-  type        String    @default("chantier") // chantier, rendez_vous, maintenance
+  type        String    @default("chantier") // chantier, rendez vous, maintenance
   location    String?
   projectId   String?
   userId      String
@@ -280,4 +281,18 @@ model CalendarEvent {
   @@index([userId])
   @@index([projectId])
   @@index([startDate])
+}
+
+model DemoData {
+  id          String   @id @default(cuid())
+  entityType  String   // client, project, devis, facture, material, calculation, event
+  entityId    String   // ID de l'entité
+  userId      String
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId])
+  @@index([userId])
+  @@index([entityType])
 }

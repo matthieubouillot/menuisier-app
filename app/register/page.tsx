@@ -11,10 +11,10 @@ import Link from "next/link"
 export default function RegisterPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
-    companyName: "",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -56,18 +56,30 @@ export default function RegisterPage() {
         </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Nom</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-sm font-medium">Prénom *</Label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  required
                   className="w-full"
-              />
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-sm font-medium">Nom *</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  required
+                  className="w-full"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -78,16 +90,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="companyName" className="text-sm font-medium">Nom de l'entreprise (optionnel)</Label>
-              <Input
-                id="companyName"
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">Mot de passe</Label>
+                <Label htmlFor="password" className="text-sm font-medium">Mot de passe *</Label>
               <Input
                 id="password"
                 type="password"

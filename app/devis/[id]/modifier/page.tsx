@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileBackButton } from "@/components/layout/mobile-back-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { formatClientName } from "@/lib/utils";
 
 interface DevisItem {
@@ -23,16 +22,14 @@ interface DevisItem {
   total: number;
 }
 
-export default function NouveauDevisPage() {
+export default function ModifierDevisPage() {
   const router = useRouter();
+  const params = useParams();
+  const devisId = params.id as string;
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
-  const [calculations, setCalculations] = useState<any[]>([]);
-  const [selectedCalculation, setSelectedCalculation] = useState<any | null>(
-    null
-  );
   const [userPaymentTerms, setUserPaymentTerms] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -56,175 +53,57 @@ export default function NouveauDevisPage() {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const [items, setItems] = useState<DevisItem[]>(() => [
-    {
-      id: generateId(),
-      description: "",
-      quantity: 1,
-      unit: "m²", // Unité par défaut pour menuisier
-      unitPrice: 0,
-      total: 0,
-    },
-  ]);
+  const [items, setItems] = useState<DevisItem[]>([]);
 
   useEffect(() => {
+    fetchDevis();
     fetchProjects();
     fetchUserSettings();
-  }, []);
+  }, [devisId]);
 
-  const fetchUserSettings = async () => {
+  const fetchDevis = async () => {
     try {
-      const res = await fetch("/api/user/settings");
-      if (res.ok) {
-        const user = await res.json();
-        // Pré-remplir les champs depuis les paramètres utilisateur
-        setUserPaymentTerms(user.paymentTerms || null);
-        setFormData((prev) => ({
-          ...prev,
-          // Ne pas pré-remplir insuranceInfo - c'est un champ spécifique à chaque devis
-          // Calculer la date de validité par défaut (30 jours)
-          validUntil: prev.validUntil || getDefaultValidUntil(),
-          // Calculer la date de début des travaux par défaut (7 jours)
-          workStartDate: prev.workStartDate || getDefaultWorkStartDate(),
-          // Durée par défaut pour menuisier
-          workDuration: prev.workDuration || "3 à 4 semaines",
-        }));
+      const res = await fetch(`/api/devis/${devisId}`);
+      if (!res.ok) {
+        throw new Error("Devis non trouvé");
       }
-    } catch (error) {
-      console.error("Erreur lors du chargement des paramètres", error);
-    }
-  };
+      const devis = await res.json();
 
-  const getDefaultValidUntil = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 30); // 30 jours par défaut
-    return date.toISOString().split("T")[0];
-  };
-
-  const getDefaultWorkStartDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7); // 7 jours par défaut
-    return date.toISOString().split("T")[0];
-  };
-
-  const fetchProjects = async () => {
-    setProjectsLoading(true);
-    try {
-      const res = await fetch("/api/projects");
-      if (res.ok) {
-        const data = await res.json();
-        setProjects(data);
-      } else {
-        console.error("Impossible de charger les projets");
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des projets", error);
-    } finally {
-      setProjectsLoading(false);
-    }
-  };
-
-  const fetchCalculationsForClient = async (clientId: string) => {
-    try {
-      const res = await fetch("/api/materials/calculations");
-      if (res.ok) {
-        const allCalculations = await res.json();
-        // Filtrer les calculs pour ce client
-        const clientCalculations = allCalculations.filter(
-          (calc: any) => calc.clientId === clientId
-        );
-        setCalculations(clientCalculations);
-
-        // Si un seul calcul, le charger automatiquement
-        if (clientCalculations.length === 1) {
-          loadCalculationIntoDevis(clientCalculations[0]);
-        } else if (clientCalculations.length === 0) {
-          // Aucun calcul, réinitialiser les items
-          setItems([
-            {
-              id: generateId(),
-              description: "",
-              quantity: 1,
-              unit: "m²",
-              unitPrice: 0,
-              total: 0,
-            },
-          ]);
-          setSelectedCalculation(null);
-        } else {
-          // Plusieurs calculs, ne pas charger automatiquement
-          setSelectedCalculation(null);
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des calculs", error);
-      setCalculations([]);
-      setSelectedCalculation(null);
-    }
-  };
-
-  const loadCalculationIntoDevis = (calculation: any) => {
-    try {
-      const materials = JSON.parse(calculation.materials || "[]");
-      const dimensions = JSON.parse(calculation.dimensions || "{}");
-
-      const laborValue = parseFloat(dimensions?.laborCost) || 0;
-      const marginPercent = parseFloat(dimensions?.marginPercent) || 0;
-
-      // Calculer le total des matériaux bruts (prix d'achat)
-      const materialsTotalBrut = materials.reduce((sum: number, mat: any) => {
-        const quantity = parseFloat(mat.quantity) || 0;
-        const unitPrice = parseFloat(mat.unitPrice) || 0;
-        return sum + quantity * unitPrice;
-      }, 0);
-
-      // Calculer la marge totale à répartir sur les matériaux
-      const baseTotal = materialsTotalBrut + laborValue;
-      const totalMargin =
-        Math.round(((baseTotal * marginPercent) / 100) * 100) / 100;
-
-      // Répartir la marge proportionnellement sur chaque matériau
-      const marginRatio =
-        materialsTotalBrut > 0 ? totalMargin / materialsTotalBrut : 0;
-
-      // Créer les lignes de matériaux avec marge intégrée dans le prix unitaire
-      const materialItems: DevisItem[] = materials.map((mat: any) => {
-        const quantity = parseFloat(mat.quantity) || 0;
-        const unitPriceBrut = parseFloat(mat.unitPrice) || 0;
-
-        // Appliquer la marge sur le prix unitaire (prix de vente = prix d'achat × (1 + ratio de marge))
-        const unitPriceWithMargin =
-          Math.round(unitPriceBrut * (1 + marginRatio) * 100) / 100;
-        const total = Math.round(quantity * unitPriceWithMargin * 100) / 100;
-
-        return {
-          id: generateId(),
-          description: mat.name || mat.description || "",
-          quantity: quantity,
-          unit: mat.unit || "unité",
-          unitPrice: unitPriceWithMargin,
-          total: total,
-        };
+      // Pré-remplir le formulaire avec les données du devis
+      setFormData({
+        title: devis.title || "",
+        description: devis.description || "",
+        projectId: devis.projectId || "",
+        clientId: devis.clientId || "",
+        tvaRate: devis.tvaRate || 20,
+        isVatApplicable: devis.isVatApplicable !== false,
+        validUntil: devis.validUntil
+          ? new Date(devis.validUntil).toISOString().split("T")[0]
+          : "",
+        advancePayment: devis.advancePayment?.toString() || "",
+        cgvReference: devis.cgvReference || "",
+        workStartDate: devis.workStartDate
+          ? new Date(devis.workStartDate).toISOString().split("T")[0]
+          : "",
+        workDuration: devis.workDuration || "",
+        travelExpenses: devis.travelExpenses?.toString() || "",
+        insuranceInfo: devis.insuranceInfo || "",
+        afterSalesService: devis.afterSalesService || "",
       });
 
-      // Ajouter la ligne main-d'œuvre si elle existe (présentée de manière professionnelle)
-      const allItems: DevisItem[] = [...materialItems];
-      if (laborValue > 0) {
-        allItems.push({
-          id: generateId(),
-          description: "Pose et installation",
-          quantity: 1,
-          unit: "forfait",
-          unitPrice: laborValue,
-          total: laborValue,
-        });
-      }
-
-      if (allItems.length > 0) {
-        setItems(allItems);
-        setSelectedCalculation(calculation);
+      // Pré-remplir les items
+      if (devis.items && devis.items.length > 0) {
+        setItems(
+          devis.items.map((item: any) => ({
+            id: generateId(),
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            total: item.total,
+          }))
+        );
       } else {
-        // Si pas de matériaux, réinitialiser avec une ligne vide
         setItems([
           {
             id: generateId(),
@@ -235,29 +114,48 @@ export default function NouveauDevisPage() {
             total: 0,
           },
         ]);
-        setSelectedCalculation(null);
       }
+
+      // Pré-remplir le projet sélectionné
+      if (devis.project) {
+        setSelectedProject(devis.project);
+      }
+
+      setLoadingData(false);
     } catch (error) {
-      console.error("Erreur lors du chargement du calcul", error);
-      setSelectedCalculation(null);
+      console.error("Erreur lors du chargement du devis:", error);
+      alert("Erreur lors du chargement du devis");
+      router.push("/devis");
     }
   };
 
-  const handleProjectChange = async (projectId: string) => {
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des projets", error);
+    }
+  };
+
+  const fetchUserSettings = async () => {
+    try {
+      const res = await fetch("/api/user/settings");
+      if (res.ok) {
+        const user = await res.json();
+        setUserPaymentTerms(user.paymentTerms || null);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des paramètres", error);
+    }
+  };
+
+  const handleProjectChange = (projectId: string) => {
     if (!projectId) {
       setSelectedProject(null);
-      setCalculations([]);
-      setSelectedCalculation(null);
-      setItems([
-        {
-          id: generateId(),
-          description: "",
-          quantity: 1,
-          unit: "m²",
-          unitPrice: 0,
-          total: 0,
-        },
-      ]);
       setFormData((prev) => ({
         ...prev,
         projectId: "",
@@ -267,38 +165,13 @@ export default function NouveauDevisPage() {
     }
 
     const project = projects.find((p) => p.id === projectId);
-    if (!project) {
-      return;
-    }
-
-    setSelectedProject(project);
-
-    // Toujours préremplir avec les données du projet sélectionné
-    setFormData((prev) => ({
-      ...prev,
-      projectId: projectId,
-      clientId: project.client?.id || "",
-      title: project.name || "",
-      description: project.description || "",
-    }));
-
-    // Si le projet a un client, charger les calculs associés
-    if (project.client?.id) {
-      await fetchCalculationsForClient(project.client.id);
-    } else {
-      setCalculations([]);
-      setSelectedCalculation(null);
-      // Réinitialiser les items si pas de client
-      setItems([
-        {
-          id: generateId(),
-          description: "",
-          quantity: 1,
-          unit: "m²",
-          unitPrice: 0,
-          total: 0,
-        },
-      ]);
+    if (project) {
+      setSelectedProject(project);
+      setFormData((prev) => ({
+        ...prev,
+        projectId: projectId,
+        clientId: project.client?.id || "",
+      }));
     }
   };
 
@@ -311,7 +184,6 @@ export default function NouveauDevisPage() {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
         if (field === "quantity" || field === "unitPrice") {
-          // Calculer le total avec arrondi cohérent
           const quantity = parseFloat(updated.quantity.toString()) || 0;
           const unitPrice = parseFloat(updated.unitPrice.toString()) || 0;
           updated.total = Math.round(quantity * unitPrice * 100) / 100;
@@ -342,18 +214,12 @@ export default function NouveauDevisPage() {
   };
 
   const calculateTotals = () => {
-    // Calculer le total HT avec arrondi cohérent
     const totalHT =
       Math.round(items.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
-
-    // Calculer la TVA avec arrondi cohérent
     const tva = formData.isVatApplicable
       ? Math.round(totalHT * (formData.tvaRate / 100) * 100) / 100
       : 0;
-
-    // Calculer le total TTC avec arrondi cohérent
     const totalTTC = Math.round((totalHT + tva) * 100) / 100;
-
     return { totalHT, tva, totalTTC };
   };
 
@@ -386,7 +252,6 @@ export default function NouveauDevisPage() {
       errors.push("La durée estimée des travaux est obligatoire");
     }
 
-    // Vérifier les lignes de devis
     const emptyItems = items.filter(
       (item) =>
         !item.description.trim() || item.quantity <= 0 || item.unitPrice <= 0
@@ -397,7 +262,6 @@ export default function NouveauDevisPage() {
       );
     }
 
-    // Vérifier qu'il y a au moins une ligne avec un total > 0
     const validItems = items.filter((item) => item.total > 0);
     if (validItems.length === 0) {
       errors.push(
@@ -422,16 +286,16 @@ export default function NouveauDevisPage() {
     const { totalHT, totalTTC } = calculateTotals();
 
     try {
-      const response = await fetch("/api/devis", {
-        method: "POST",
+      const response = await fetch(`/api/devis/${devisId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          items: items.map(({ id, ...item }) => item), // Retirer l'ID avant l'envoi
+          items: items.map(({ id, ...item }) => item),
           totalHT,
           totalTTC,
           projectId: formData.projectId || null,
-          clientId: formData.clientId || null, // Récupéré automatiquement depuis le projet
+          clientId: formData.clientId || null,
           validUntil: formData.validUntil
             ? new Date(formData.validUntil).toISOString()
             : null,
@@ -456,14 +320,14 @@ export default function NouveauDevisPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.error || "Erreur lors de la création du devis"
+          errorData.error || "Erreur lors de la modification du devis"
         );
       }
 
-      router.push("/devis");
+      router.push(`/devis/${devisId}`);
     } catch (error: any) {
       console.error("Erreur détaillée:", error);
-      alert(error?.message || "Erreur lors de la création du devis");
+      alert(error?.message || "Erreur lors de la modification du devis");
     } finally {
       setLoading(false);
     }
@@ -471,23 +335,32 @@ export default function NouveauDevisPage() {
 
   const { totalHT, tva, totalTTC } = calculateTotals();
 
+  if (loadingData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-12">
+          <p className="text-center">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-12">
-        <MobileBackButton href="/devis" />
+        <MobileBackButton href={`/devis/${devisId}`} label="Retour au devis" />
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 lg:mb-12 text-foreground">
-          Nouveau devis
+          Modifier le devis
         </h1>
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:gap-6">
               <Card className="hover:shadow-xl transition-shadow duration-200">
                 <CardHeader>
-                  <CardTitle className="text-xl">
-                    Informations générales
-                  </CardTitle>
+                  <CardTitle className="text-xl">Informations générales</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -537,11 +410,6 @@ export default function NouveauDevisPage() {
                         </option>
                       ))}
                     </Select>
-                    {projectsLoading && (
-                      <p className="text-sm text-muted-foreground">
-                        Chargement des projets...
-                      </p>
-                    )}
                     {selectedProject && (
                       <div className="mt-2 p-3 bg-muted/50 rounded-xl border">
                         {selectedProject.client ? (
@@ -551,16 +419,11 @@ export default function NouveauDevisPage() {
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {formatClientName(selectedProject.client)}
-                              {selectedProject.client.email &&
-                                ` • ${selectedProject.client.email}`}
-                              {selectedProject.client.phone &&
-                                ` • ${selectedProject.client.phone}`}
                             </p>
                           </>
                         ) : (
                           <p className="text-sm text-muted-foreground">
-                            ⚠️ Ce projet n'a pas de client associé. Le devis
-                            sera créé sans client.
+                            ⚠️ Ce projet n'a pas de client associé.
                           </p>
                         )}
                       </div>
@@ -655,7 +518,7 @@ export default function NouveauDevisPage() {
                           })
                         }
                         required
-                        min={new Date().toISOString().split("T")[0]} // Pas de date dans le passé
+                        min={new Date().toISOString().split("T")[0]}
                       />
                     </div>
                     <div className="space-y-2">
@@ -962,7 +825,7 @@ export default function NouveauDevisPage() {
                   disabled={loading}
                   size="lg"
                 >
-                  {loading ? "Création..." : "Créer le devis"}
+                  {loading ? "Modification..." : "Enregistrer les modifications"}
                 </Button>
                 <Button
                   type="button"
@@ -981,3 +844,4 @@ export default function NouveauDevisPage() {
     </div>
   );
 }
+

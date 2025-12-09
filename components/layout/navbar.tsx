@@ -30,46 +30,44 @@ export function Navbar() {
             </Link>
             <div className="hidden md:flex items-center space-x-2">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="rounded-xl">
+                <Button variant="ghost" size="default" className="rounded-xl">
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   Tableau de bord
                 </Button>
               </Link>
               <Link href="/devis">
-                <Button variant="ghost" size="sm" className="rounded-xl">
+                <Button variant="ghost" size="default" className="rounded-xl">
                   <FileText className="mr-2 h-4 w-4" />
                   Devis & Factures
                 </Button>
               </Link>
               <Link href="/atelier">
-                <Button variant="ghost" size="sm" className="rounded-xl">
+                <Button variant="ghost" size="default" className="rounded-xl">
                   <Calculator className="mr-2 h-4 w-4" />
                   Mon atelier
                 </Button>
               </Link>
               <Link href="/calendrier">
-                <Button variant="ghost" size="sm" className="rounded-xl">
+                <Button variant="ghost" size="default" className="rounded-xl">
                   <Calendar className="mr-2 h-4 w-4" />
                   Calendrier
                 </Button>
               </Link>
+              <Link href="/parametres">
+                <Button variant="ghost" size="default" className="rounded-xl">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Paramètres
+                </Button>
+              </Link>
             </div>
-          </div>
-          <div className="hidden md:flex items-center space-x-2">
-            <Link href="/parametres">
-              <Button variant="ghost" size="sm" className="rounded-xl">
-                <Settings className="mr-2 h-4 w-4" />
-                Paramètres
-              </Button>
-            </Link>
           </div>
           <div className="flex items-center space-x-4">
             <span className="hidden sm:block text-sm text-muted-foreground font-medium">
-              {session.user?.email}
+              {session.user?.name || session.user?.email}
             </span>
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="default" 
               onClick={() => signOut()}
               className="rounded-xl"
             >

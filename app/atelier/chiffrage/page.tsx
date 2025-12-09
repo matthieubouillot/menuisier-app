@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Calculator, Package, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
+import { MobileBackButton } from "@/components/layout/mobile-back-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,6 +38,9 @@ type CustomLine = {
 type ClientOption = {
   id: string;
   label: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string | null;
 };
 
 const generateId = () =>
@@ -48,14 +52,17 @@ export default function ChiffragePage() {
   const [catalog, setCatalog] = useState<CatalogMaterial[]>([]);
   const [savedCalculations, setSavedCalculations] = useState<any[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [allClients, setAllClients] = useState<any[]>([]);
 
   const [lines, setLines] = useState<CustomLine[]>([]);
-  const [calcName, setCalcName] = useState("Projet sur mesure");
+  const [calcName, setCalcName] = useState("");
   const [marginPercent, setMarginPercent] = useState("15");
   const [laborCost, setLaborCost] = useState("0");
   const [selectionId, setSelectionId] = useState("");
   const [selectionQuantity, setSelectionQuantity] = useState("1");
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedClientName, setSelectedClientName] = useState("");
+  const [showClientModal, setShowClientModal] = useState(false);
   const [editingCalcId, setEditingCalcId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -110,10 +117,14 @@ export default function ChiffragePage() {
       const res = await fetch("/api/clients");
       if (!res.ok) throw new Error("Impossible de charger vos clients.");
       const data = await res.json();
+      setAllClients(data);
       setClients(
         data.map((client: any) => ({
           id: client.id,
           label: client.companyName || `${client.firstName} ${client.lastName}`,
+          firstName: client.firstName,
+          lastName: client.lastName,
+          companyName: client.companyName,
         }))
       );
     } catch (err) {
@@ -319,7 +330,7 @@ export default function ChiffragePage() {
           total: item.total,
         }))
       );
-      setCalcName(calc.projectType || "Projet sur mesure");
+      setCalcName(calc.projectType || "");
       setMarginPercent(
         parsedDimensions?.marginPercent !== undefined
           ? String(parsedDimensions.marginPercent)
@@ -363,6 +374,7 @@ export default function ChiffragePage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
+        <MobileBackButton href="/atelier" label="Retour à l'atelier" />
         <div>
           <p className="text-sm uppercase tracking-widest text-muted-foreground mb-2">
             Chiffrage personnalisé
@@ -390,10 +402,11 @@ export default function ChiffragePage() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label>Projet sur mesure</Label>
+                <Label>Titre du projet</Label>
                 <Input
                   value={calcName}
                   onChange={(e) => setCalcName(e.target.value)}
+                  placeholder="Ex: Cuisine moderne avec îlot"
                 />
               </div>
               <div className="space-y-2">
@@ -414,17 +427,14 @@ export default function ChiffragePage() {
               </div>
               <div className="space-y-2">
                 <Label>Associer à un client</Label>
-                <Select
-                  value={selectedClientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setShowClientModal(true)}
                 >
-                  <option value="">Aucun</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.label}
-                    </option>
-                  ))}
-                </Select>
+                  {selectedClientName || "Sélectionner un client"}
+                </Button>
               </div>
             </div>
 
@@ -807,6 +817,78 @@ export default function ChiffragePage() {
           </CardContent>
         </Card>
       </div>
+
+      {showClientModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-2xl rounded-3xl border bg-card shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <p className="text-lg font-semibold text-foreground">
+                  Sélectionner un client
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Choisissez un client pour associer ce chiffrage.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowClientModal(false)}
+              >
+                Fermer
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClientId("");
+                    setSelectedClientName("Aucun");
+                    setShowClientModal(false);
+                  }}
+                  className="w-full text-left rounded-xl border p-4 hover:bg-muted transition-colors"
+                >
+                  <p className="font-semibold text-foreground">Aucun client</p>
+                  <p className="text-sm text-muted-foreground">
+                    Ne pas associer de client à ce chiffrage
+                  </p>
+                </button>
+                {allClients.map((client) => (
+                  <button
+                    key={client.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedClientId(client.id);
+                      setSelectedClientName(
+                        client.companyName ||
+                          `${client.firstName} ${client.lastName}`
+                      );
+                      setShowClientModal(false);
+                    }}
+                    className="w-full text-left rounded-xl border p-4 hover:bg-muted transition-colors"
+                  >
+                    <p className="font-semibold text-foreground">
+                      {client.companyName ||
+                        `${client.firstName} ${client.lastName}`}
+                    </p>
+                    {client.companyName && (
+                      <p className="text-sm text-muted-foreground">
+                        Contact : {client.firstName} {client.lastName}
+                      </p>
+                    )}
+                    {client.email && (
+                      <p className="text-xs text-muted-foreground">
+                        {client.email}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
