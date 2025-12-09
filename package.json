@@ -11,6 +11,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
+    "db:resolve": "prisma migrate resolve",
     "postinstall": "prisma generate"
   },
   "dependencies": {
