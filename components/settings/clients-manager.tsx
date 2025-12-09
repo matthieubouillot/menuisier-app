@@ -218,7 +218,7 @@ export function ClientsManager() {
   const renderClientCard = (client: Client) => (
     <div
       key={client.id}
-      className="rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      className="rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
     >
       <div>
         <p className="font-semibold text-foreground">

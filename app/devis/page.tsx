@@ -54,7 +54,7 @@ export default async function DevisPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Liste des devis */}
           <Card className="hover:shadow-xl transition-shadow duration-200">
             <CardHeader>
@@ -74,7 +74,7 @@ export default async function DevisPage() {
                 ) : (
                   devis.map((devi) => (
                     <Link key={devi.id} href={`/devis/${devi.id}`}>
-                      <div className="p-3 sm:p-4 rounded-2xl bg-secondary/50 hover:bg-secondary transition-all cursor-pointer border-2 border-transparent hover:border-primary/20">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-secondary/50 hover:bg-secondary transition-all cursor-pointer border-2 border-transparent hover:border-primary/20 mb-3 sm:mb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm sm:text-base truncate">
@@ -130,7 +130,7 @@ export default async function DevisPage() {
                       key={facture.id}
                       href={`/devis/facture/${facture.id}`}
                     >
-                      <div className="p-3 sm:p-4 rounded-2xl bg-secondary/50 hover:bg-secondary transition-all cursor-pointer border-2 border-transparent hover:border-primary/20">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-secondary/50 hover:bg-secondary transition-all cursor-pointer border-2 border-transparent hover:border-primary/20 mb-3 sm:mb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm sm:text-base truncate">
