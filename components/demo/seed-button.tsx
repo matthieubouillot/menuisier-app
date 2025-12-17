@@ -27,7 +27,11 @@ export function SeedButton() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la génération")
+        const errorMessage = data.details 
+          ? `${data.error}: ${data.details}` 
+          : data.error || "Erreur lors de la génération"
+        console.error("Erreur API:", data)
+        throw new Error(errorMessage)
       }
 
       setMessage({

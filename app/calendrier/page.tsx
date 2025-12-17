@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface CalendarEvent {
 }
 
 export default function CalendrierPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,7 +85,10 @@ export default function CalendrierPage() {
         throw new Error("Erreur lors de la suppression");
       }
 
+      // Rafraîchir les événements du calendrier
       fetchEvents();
+      // Rafraîchir les données du serveur (pour mettre à jour le dashboard)
+      router.refresh();
     } catch (error) {
       console.error(error);
       alert("Erreur lors de la suppression de l'événement");
@@ -124,7 +129,10 @@ export default function CalendrierPage() {
         type: "chantier",
         location: "",
       });
+      // Rafraîchir les événements du calendrier
       fetchEvents();
+      // Rafraîchir les données du serveur (pour mettre à jour le dashboard)
+      router.refresh();
     } catch (error) {
       console.error(error);
       alert(

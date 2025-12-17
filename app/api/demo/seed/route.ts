@@ -12,52 +12,87 @@ export async function POST() {
 
     const userId = session.user.id;
 
+    console.log("🚀 Début de la génération des données de démonstration pour l'utilisateur:", userId);
+
     // Supprimer uniquement les anciennes données de démo
-    console.log("Suppression des anciennes données de démo...");
+    console.log("🗑️ Suppression des anciennes données de démo...");
     const oldDemoData = await prisma.demoData.findMany({ where: { userId } });
 
-    // Supprimer les entités liées aux données de démo
-    for (const demo of oldDemoData) {
-      switch (demo.entityType) {
-        case "client":
-          await prisma.client.deleteMany({ where: { id: demo.entityId } });
-          break;
-        case "project":
-          await prisma.project.deleteMany({ where: { id: demo.entityId } });
-          break;
-        case "devis":
-          await prisma.devisItem.deleteMany({
-            where: { devisId: demo.entityId },
-          });
-          await prisma.devis.deleteMany({ where: { id: demo.entityId } });
-          break;
-        case "facture":
-          await prisma.factureItem.deleteMany({
-            where: { factureId: demo.entityId },
-          });
-          await prisma.facture.deleteMany({ where: { id: demo.entityId } });
-          break;
-        case "material":
-          await prisma.material.deleteMany({ where: { id: demo.entityId } });
-          break;
-        case "calculation":
-          await prisma.materialCalculation.deleteMany({
-            where: { id: demo.entityId },
-          });
-          break;
-        case "event":
-          await prisma.calendarEvent.deleteMany({
-            where: { id: demo.entityId },
-          });
-          break;
+    if (oldDemoData.length > 0) {
+      // Grouper par type d'entité pour une suppression plus efficace
+      const byType = oldDemoData.reduce((acc, demo) => {
+        if (!acc[demo.entityType]) {
+          acc[demo.entityType] = [];
+        }
+        acc[demo.entityType].push(demo.entityId);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      // Supprimer dans le bon ordre (factures avant devis)
+      if (byType.facture) {
+        for (const factureId of byType.facture) {
+          await prisma.factureItem.deleteMany({ where: { factureId } });
+        }
+        await prisma.facture.deleteMany({
+          where: { id: { in: byType.facture } },
+        });
       }
+
+      if (byType.devis) {
+        for (const devisId of byType.devis) {
+          await prisma.devisItem.deleteMany({ where: { devisId } });
+        }
+        // Supprimer les factures liées aux devis de démo
+        await prisma.factureItem.deleteMany({
+          where: { facture: { devisId: { in: byType.devis } } },
+        });
+        await prisma.facture.deleteMany({
+          where: { devisId: { in: byType.devis } },
+        });
+        await prisma.devis.deleteMany({
+          where: { id: { in: byType.devis } },
+        });
+      }
+
+      if (byType.client) {
+        await prisma.client.deleteMany({
+          where: { id: { in: byType.client } },
+        });
+      }
+
+      if (byType.project) {
+        await prisma.project.deleteMany({
+          where: { id: { in: byType.project } },
+        });
+      }
+
+      if (byType.material) {
+        await prisma.material.deleteMany({
+          where: { id: { in: byType.material } },
+        });
+      }
+
+      if (byType.calculation) {
+        await prisma.materialCalculation.deleteMany({
+          where: { id: { in: byType.calculation } },
+        });
+      }
+
+      if (byType.event) {
+        await prisma.calendarEvent.deleteMany({
+          where: { id: { in: byType.event } },
+        });
+      }
+
+      // Supprimer les enregistrements DemoData
+      await prisma.demoData.deleteMany({ where: { userId } });
+      console.log("✅ Anciennes données de démo supprimées avec succès");
+    } else {
+      console.log("ℹ️ Aucune ancienne donnée de démo à supprimer");
     }
 
-    // Supprimer les enregistrements DemoData
-    await prisma.demoData.deleteMany({ where: { userId } });
-    console.log("Anciennes données de démo supprimées avec succès");
-
     // 1. Créer des clients variés (particuliers et professionnels)
+    console.log("👥 Création des clients...");
     const clients = await Promise.all([
       prisma.client.create({
         data: {
@@ -122,8 +157,10 @@ export async function POST() {
         },
       }),
     ]);
+    console.log(`✅ ${clients.length} clients créés`);
 
     // 2. Créer des matériaux dans le catalogue
+    console.log("📦 Création des matériaux...");
     const materials = await Promise.all([
       prisma.material.create({
         data: {
@@ -222,8 +259,10 @@ export async function POST() {
         },
       }),
     ]);
+    console.log(`✅ ${materials.length} matériaux créés`);
 
     // 3. Créer des projets
+    console.log("📋 Création des projets...");
     const projects = await Promise.all([
       prisma.project.create({
         data: {
@@ -268,8 +307,10 @@ export async function POST() {
         },
       }),
     ]);
+    console.log(`✅ ${projects.length} projets créés`);
 
     // 4. Créer des calculs de matériaux (chiffrages) AVANT les devis
+    console.log("🧮 Création des calculs...");
     // Ces calculs seront utilisés pour préremplir les devis
     const calculation1Materials = [
       {
@@ -416,8 +457,33 @@ export async function POST() {
         },
       }),
     ]);
+    console.log(`✅ ${calculations.length} calculs créés`);
 
     // 5. Créer des devis avec les MÊMES données que les calculs (pour cohérence)
+    console.log("📄 Création des devis...");
+    
+    // Supprimer les devis/factures existants avec les mêmes numéros de démo
+    const demoNumbers = ["DEV-2025-001", "DEV-2025-002", "DEV-2025-003", "FAC-2025-001", "FAC-2025-002"];
+    console.log("🧹 Suppression des devis/factures existants avec les numéros de démo...");
+    for (const number of demoNumbers) {
+      // Supprimer les factures avec ce numéro
+      const facturesToDelete = await prisma.facture.findMany({
+        where: { number, userId },
+      });
+      for (const facture of facturesToDelete) {
+        await prisma.factureItem.deleteMany({ where: { factureId: facture.id } });
+        await prisma.facture.delete({ where: { id: facture.id } });
+      }
+      // Supprimer les devis avec ce numéro
+      const devisToDelete = await prisma.devis.findMany({
+        where: { number, userId },
+      });
+      for (const devis of devisToDelete) {
+        await prisma.devisItem.deleteMany({ where: { devisId: devis.id } });
+        await prisma.devis.delete({ where: { id: devis.id } });
+      }
+    }
+    
     const devisData = [
       {
         number: "DEV-2025-001",
@@ -654,8 +720,10 @@ export async function POST() {
         return created;
       })
     );
+    console.log(`✅ ${devis.length} devis créés`);
 
     // 6. Créer des factures (converties depuis devis acceptés)
+    console.log("💰 Création des factures...");
     const facturesData = [
       {
         number: "FAC-2025-001",
@@ -729,8 +797,10 @@ export async function POST() {
         return created;
       })
     );
+    console.log(`✅ ${factures.length} factures créées`);
 
     // 7. Créer des événements de calendrier
+    console.log("📅 Création des événements...");
     const events = await Promise.all([
       prisma.calendarEvent.create({
         data: {
@@ -771,8 +841,10 @@ export async function POST() {
         },
       }),
     ]);
+    console.log(`✅ ${events.length} événements créés`);
 
     // Enregistrer tous les IDs dans DemoData pour pouvoir les supprimer plus tard
+    console.log("💾 Enregistrement des données de démo...");
     const demoDataEntries = [
       ...clients.map((c) => ({ entityType: "client", entityId: c.id, userId })),
       ...materials.map((m) => ({
@@ -799,10 +871,23 @@ export async function POST() {
       })),
     ];
 
-    await prisma.demoData.createMany({
-      data: demoDataEntries,
-      skipDuplicates: true,
-    });
+    // Créer les entrées DemoData une par une pour éviter les erreurs de contrainte unique
+    let createdCount = 0;
+    for (const entry of demoDataEntries) {
+      try {
+        await prisma.demoData.create({
+          data: entry,
+        });
+        createdCount++;
+      } catch (error: any) {
+        // Ignorer les erreurs de contrainte unique (l'entrée existe déjà)
+        if (error?.code !== 'P2002') {
+          throw error;
+        }
+      }
+    }
+    console.log(`✅ ${createdCount}/${demoDataEntries.length} entrées DemoData créées`);
+    console.log("🎉 Données de démonstration créées avec succès !");
 
     return NextResponse.json({
       success: true,
@@ -818,11 +903,18 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error("Error seeding demo data:", error);
+    console.error("❌ Error seeding demo data:", error);
     console.error(
       "Error stack:",
       error instanceof Error ? error.stack : "No stack"
     );
+    
+    // Log plus détaillé pour identifier le problème
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+    }
+    
     return NextResponse.json(
       {
         error: "Erreur lors de la création des données de démonstration",
