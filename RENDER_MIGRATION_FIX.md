@@ -32,14 +32,16 @@ npm run db:deploy
 Pour éviter ce problème à l'avenir, modifiez votre **Build Command** sur Render pour utiliser :
 
 ```bash
-npm run db:deploy-safe && npm run build
+npm run build:render
 ```
 
-Ou utilisez le script de build complet :
+Ou directement :
 
 ```bash
-node scripts/build-with-migrations.js
+bash scripts/render-build.sh
 ```
+
+Ce script nettoie automatiquement les migrations échouées avant d'appliquer les migrations et de builder l'application.
 
 ## Solution alternative (via SQL direct)
 

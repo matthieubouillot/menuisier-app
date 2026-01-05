@@ -21,13 +21,13 @@ async function resetFailedMigrations() {
   const dbUrl = process.env.DATABASE_URL;
 
   if (!dbUrl) {
-    console.error("❌ DATABASE_URL environment variable is not set");
-    process.exit(1);
+    console.log("⚠️  DATABASE_URL environment variable is not set, skipping cleanup");
+    return;
   }
 
   if (!dbUrl.startsWith("postgresql://") && !dbUrl.startsWith("postgres://")) {
-    console.error("❌ This script only works with PostgreSQL databases");
-    process.exit(1);
+    console.log("⚠️  Not a PostgreSQL database, skipping cleanup");
+    return;
   }
 
   const pool = new Pool({
@@ -100,9 +100,14 @@ async function resetFailedMigrations() {
 
     await pool.end();
   } catch (error) {
-    console.error("❌ Error resetting failed migrations:", error.message);
-    await pool.end();
-    process.exit(1);
+    // Ne pas faire échouer le processus, juste logger l'erreur
+    console.log(`⚠️  Could not reset failed migrations: ${error.message}`);
+    console.log("⚠️  This is OK if the database is not accessible yet");
+    try {
+      await pool.end();
+    } catch (e) {
+      // Ignorer les erreurs de fermeture
+    }
   }
 }
 
