@@ -15,7 +15,15 @@ try {
   // dotenv n'est pas nécessaire en production
 }
 
-const { Pool } = require("pg");
+// Essayer de charger pg, mais ne pas faire échouer si pas disponible
+let Pool;
+try {
+  Pool = require("pg").Pool;
+} catch (e) {
+  console.log("⚠️  Module 'pg' not found. Skipping migration cleanup.");
+  console.log("⚠️  This is OK if dependencies are not installed yet.");
+  process.exit(0);
+}
 
 async function cleanupFailedMigrations() {
   const dbUrl = process.env.DATABASE_URL;

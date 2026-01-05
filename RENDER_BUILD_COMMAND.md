@@ -9,8 +9,10 @@ Vous avez une erreur P3009 lors du déploiement sur Render car il y a des migrat
 Dans les paramètres de votre service Render (via l'interface web), modifiez le **Build Command** pour utiliser :
 
 ```bash
-node scripts/pre-migrate.js && npx prisma migrate deploy && npm run build
+npm install && node scripts/pre-migrate.js && npx prisma migrate deploy && npm run build
 ```
+
+**Important** : Assurez-vous que `npm install` est inclus pour installer les dépendances avant d'exécuter les scripts.
 
 Cette commande :
 1. Nettoie automatiquement les migrations échouées (`pre-migrate.js`)
