@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:deploy": "node scripts/deploy-migrations.js",
     "db:studio": "prisma studio",
     "db:resolve": "prisma migrate resolve",
     "db:reset-failed": "node scripts/reset-failed-migrations.js",
