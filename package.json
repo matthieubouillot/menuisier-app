@@ -15,7 +15,8 @@
     "db:resolve": "prisma migrate resolve",
     "db:reset-failed": "node scripts/reset-failed-migrations.js",
     "db:deploy-safe": "node scripts/reset-failed-migrations.js && prisma migrate deploy",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "premigrate": "node scripts/pre-migrate.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
