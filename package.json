@@ -12,6 +12,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:resolve": "prisma migrate resolve",
+    "db:reset-failed": "node scripts/reset-failed-migrations.js",
+    "db:deploy-safe": "node scripts/reset-failed-migrations.js && prisma migrate deploy",
     "postinstall": "prisma generate"
   },
   "dependencies": {
